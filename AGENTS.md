@@ -31,14 +31,15 @@ and complete them to score BINGO. See `README.md` for the product overview and
 - **Styling:** Tailwind CSS v4 utilities + the shadcn/ui-style components in
   `src/components/ui`. Use the semantic tokens (`bg-primary`, `text-muted-foreground`,
   `rounded-[var(--radius-lg)]`, …), not raw colors.
-- **Auth is Google-only** via Supabase. Do not add other providers without a
-  product decision.
-- **Database access is Prisma only** (`src/lib/prisma.ts`). Update
-  `prisma/schema.prisma`, then `npm run db:push` and `npm run prisma:generate`.
+- **Auth is Google-only** via Firebase Auth. Do not add other providers
+  without a product decision.
+- **Database access is Admin-SDK only** (`src/lib/firebase/admin.ts`), from
+  Server Components/Server Actions/Route Handlers — never the client Firestore
+  SDK. Data-access helpers live in `src/lib/firestore/`.
 
-## Data model (see `prisma/schema.prisma`)
+## Data model (see `src/lib/firestore/`)
 
-- `Profile` — one row per user, `id` mirrors the Supabase `auth.users` id.
+- `Profile` — one row per user, `id` mirrors the Firebase Auth `uid`.
 - `Card` — `name`, `gridSize` (3 or 5), `hasFreeSpace`, `layout` (RANDOM|SET).
 - `Square` — `position` (fixed grid slot), `label`, `kind` (CHECK|COUNTER),
   `goal` (CHECK == 1, COUNTER == N), `isFreeSpace`.
@@ -76,7 +77,6 @@ when it isn't obvious.
 
 ## Environment notes
 
-- `prisma generate` downloads a query engine binary on install; this needs
-  network access. It runs automatically via the `postinstall` script and on
-  Vercel. In restricted/offline sandboxes it may fail — that's an environment
-  limitation, not a code issue.
+- `firebase-admin` needs a service account (`FIREBASE_PROJECT_ID`,
+  `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`) available at runtime to
+  talk to Firestore; see `.env.example`.
