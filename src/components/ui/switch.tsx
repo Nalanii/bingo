@@ -9,6 +9,7 @@ export interface SwitchProps {
   "aria-label"?: string;
   id?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export function Switch({
@@ -16,6 +17,7 @@ export function Switch({
   onChange,
   className,
   id,
+  disabled = false,
   ...props
 }: SwitchProps) {
   return (
@@ -25,10 +27,12 @@ export function Switch({
       id={id}
       aria-checked={checked}
       aria-label={props["aria-label"]}
-      onClick={() => onChange(!checked)}
+      disabled={disabled}
+      onClick={() => !disabled && onChange(!checked)}
       className={cn(
         "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border-2 border-border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         checked ? "bg-primary" : "bg-muted",
+        disabled && "cursor-not-allowed opacity-50",
         className,
       )}
     >
