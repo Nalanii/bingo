@@ -16,9 +16,11 @@ import type { CardSettings } from "./types";
 const NAME_MAX_LENGTH = 128;
 
 export function CardSettingsStep({
+  mode = "create",
   defaultValues,
   onComplete,
 }: {
+  mode?: "create" | "edit";
   defaultValues: CardSettings;
   onComplete: (settings: CardSettings) => void;
 }) {
@@ -29,6 +31,8 @@ export function CardSettingsStep({
   );
   const [layout, setLayout] = React.useState(defaultValues.layout);
   const [nameError, setNameError] = React.useState<string | null>(null);
+
+  const locked = mode === "edit";
 
   const handleNext = () => {
     const trimmedName = name.trim();
@@ -42,7 +46,7 @@ export function CardSettingsStep({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Build a new card 🎲</CardTitle>
+        <CardTitle>{locked ? "Edit card ✏️" : "Build a new card 🎲"}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
@@ -70,6 +74,7 @@ export function CardSettingsStep({
             aria-label="Grid size"
             value={String(gridSize)}
             onChange={(value) => setGridSize(value === "3" ? 3 : 5)}
+            disabled={locked}
             options={[
               { value: "3", label: "3×3" },
               { value: "5", label: "5×5" },
@@ -85,9 +90,17 @@ export function CardSettingsStep({
             id="free-space"
             checked={hasFreeSpace}
             onChange={setHasFreeSpace}
+            disabled={locked}
             aria-label="Free space in the center"
           />
         </div>
+
+        {locked ? (
+          <p className="text-sm text-muted-foreground">
+            Grid size and free space can&rsquo;t be changed after a card is
+            created.
+          </p>
+        ) : null}
 
         <div className="flex flex-col gap-2">
           <span className="text-sm font-semibold">Square order</span>
