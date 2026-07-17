@@ -1,19 +1,18 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { listCardsByOwner } from "@/lib/firestore/cards";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 
 export default async function DashboardPage() {
   const user = await getUser();
-  // getUser() is guaranteed by middleware, but keep types honest.
-  const cards = user
-    ? await prisma.card.findMany({
-        where: { ownerId: user.id },
-        orderBy: { updatedAt: "desc" },
-        include: { _count: { select: { squares: true } } },
-      })
-    : [];
+  // getUser() is guaranteed by middleware, but the proxy's revocation check is
+  // weaker than getUser()'s, so a revoked-but-unexpired cookie can still reach
+  // here. Redirect defensively instead of silently rendering an empty state.
+  if (!user) redirect("/");
+
+  const cards = await listCardsByOwner(user.uid);
 
   return (
     <div className="flex flex-col gap-6">
@@ -46,7 +45,7 @@ export default async function DashboardPage() {
               <CardContent className="flex flex-col gap-2 py-6">
                 <CardTitle>{card.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {card.gridSize}×{card.gridSize} · {card._count.squares} squares
+                  {card.gridSize}×{card.gridSize} · {card.squareCount} squares
                 </p>
               </CardContent>
             </Card>

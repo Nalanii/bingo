@@ -11,8 +11,11 @@ each item below maps to one issue. Checked items are done.
 
 - [x] Scaffold Next.js 16 (App Router) + TypeScript + Tailwind v4
 - [x] shadcn/ui-style component base + funky design tokens
-- [x] Supabase Google-only auth (sign in/out, session middleware, callback)
-- [x] Prisma schema: Profile, Card, Square, Completion
+- [x] Firebase Google-only auth (sign in/out, session cookie, middleware)
+- [x] Firestore data model: profiles, cards (embedded squares)
+- [ ] Firestore completions data-access helper (design documented in
+      docs/ARCHITECTURE.md; not yet implemented — no completions feature
+      exists in the app to use it yet)
 - [x] Funky landing page + protected dashboard stub
 - [x] README, AGENTS/CLAUDE guides, CONTRIBUTING, CI
 
@@ -45,14 +48,14 @@ each item below maps to one issue. Checked items are done.
 - [ ] Responsive QA pass across mobile and desktop breakpoints `design`
 - [ ] Accessibility pass — WCAG 2.1 AA: contrast, focus, keyboard nav, labels `a11y`
 - [ ] Loading, empty, and error states for all async views
-- [ ] Supabase Row Level Security policies (defense-in-depth) `chore`
+- [x] Firestore security rules denying direct client access (defense-in-depth) `chore`
 - [ ] Testing setup: Vitest (unit) + Playwright (e2e), wired into CI `chore`
 - [ ] SEO / Open Graph metadata + app icons `chore`
 - [ ] Global error boundary + custom not-found page
 
 ## 🔮 Future goals `future`
 
-- [ ] Photos attached to completions (Supabase Storage)
+- [ ] Photos attached to completions (Firebase Storage)
 - [ ] Card time frames (e.g. "this card is for 2026 only")
 - [ ] View-only card sharing with friends via a code + browse others' cards
 - [ ] Expand grid sizes beyond 3×3 and 5×5

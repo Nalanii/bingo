@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { getRedirectResult, signInWithRedirect } from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/button";
-import { env } from "@/lib/env";
 
-/** Google-only sign-in. Kicks off Supabase OAuth and returns via /auth/callback. */
+/** Google-only sign-in via Firebase Auth, then mints a server session cookie. */
 export function GoogleSignInButton({
   size = "lg",
   label = "Continue with Google",
@@ -14,20 +15,60 @@ export function GoogleSignInButton({
   label?: string;
 }) {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  // Completes sign-in after Google redirects back to this page.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function completeRedirectSignIn() {
+      try {
+        const result = await getRedirectResult(auth);
+        if (!result || cancelled) return;
+
+        setLoading(true);
+        const idToken = await result.user.getIdToken();
+
+        const response = await fetch("/api/auth/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to establish session");
+        }
+
+        router.push("/dashboard");
+        router.refresh();
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Google sign-in failed", error);
+          setLoading(false);
+        }
+      }
+    }
+
+    void completeRedirectSignIn();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   async function signIn() {
     setLoading(true);
-    const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${env.siteUrl}/auth/callback` },
-    });
+    try {
+      await signInWithRedirect(auth, googleProvider);
+    } catch (error) {
+      console.error("Google sign-in failed", error);
+      setLoading(false);
+    }
   }
 
   return (
     <Button variant="outline" size={size} onClick={signIn} disabled={loading}>
       <GoogleGlyph />
-      {loading ? "Redirecting…" : label}
+      {loading ? "Signing in…" : label}
     </Button>
   );
 }

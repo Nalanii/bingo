@@ -35,8 +35,8 @@ with friends via a code · lots of delightful animations.
 | ---------- | -------------------------------------------------- |
 | Framework  | [Next.js](https://nextjs.org) 16 (App Router) + TS |
 | Styling    | Tailwind CSS v4 + shadcn/ui-style components       |
-| Auth       | Supabase Auth (Google provider only)               |
-| Database   | Supabase Postgres via Prisma ORM                   |
+| Auth       | Firebase Auth (Google provider only)               |
+| Database   | Firestore, via the Firebase Admin SDK              |
 | Hosting    | Vercel                                             |
 
 ## Getting started
@@ -44,8 +44,9 @@ with friends via a code · lots of delightful animations.
 ### Prerequisites
 
 - Node.js 20+ and npm
-- A [Supabase](https://supabase.com) project
-- A Google OAuth client (configured as a provider in Supabase Auth)
+- A [Firebase](https://firebase.google.com) project with Firestore and
+  Authentication enabled
+- The Google sign-in provider enabled in Firebase Authentication
 
 ### 1. Install
 
@@ -61,22 +62,25 @@ Copy the example env file and fill in your values:
 cp .env.example .env.local
 ```
 
-You'll need your Supabase URL and anon key (Project Settings → API) and both the
-pooled and direct database connection strings (Project Settings → Database).
+You'll need your Firebase web app config (Project settings → General → Your
+apps) and an Admin SDK service account key (Project settings → Service
+accounts → Generate new private key).
 
-### 3. Set up the database
+### 3. Enable Google sign-in
+
+In the Firebase console: **Authentication → Sign-in method → Google**, enable
+the provider. Add `localhost` (and your production domain) to
+**Authentication → Settings → Authorized domains**.
+
+### 4. Set up Firestore
+
+In the Firebase console, create a Firestore database (production mode is
+fine — `firestore.rules` denies all direct client access already). Deploy the
+rules file once you have the Firebase CLI set up:
 
 ```bash
-npm run db:push        # push the Prisma schema to Supabase
-npm run prisma:generate
+npx firebase-tools deploy --only firestore:rules
 ```
-
-### 4. Configure Google auth in Supabase
-
-In your Supabase dashboard: **Authentication → Providers → Google**, add your
-Google OAuth client ID and secret, and add
-`http://localhost:3000/auth/callback` (and your production URL) to the redirect
-allow-list.
 
 ### 5. Run
 
@@ -96,9 +100,6 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run lint`            | ESLint                                  |
 | `npm run typecheck`       | TypeScript, no emit                     |
 | `npm run format`          | Prettier write                          |
-| `npm run db:push`         | Push Prisma schema to the database      |
-| `npm run prisma:generate` | Regenerate the Prisma client            |
-| `npm run db:studio`       | Open Prisma Studio                      |
 
 ## Project structure
 
@@ -106,16 +107,15 @@ Open [http://localhost:3000](http://localhost:3000).
 src/
   app/
     page.tsx                 # funky landing page
-    auth/callback/route.ts   # OAuth code exchange + profile upsert
-    auth/signout/route.ts    # sign out
+    api/auth/session/route.ts # verifies ID token, mints/clears session cookie
     dashboard/               # authed area (card list, builder — WIP)
   components/                # UI + feature components
   lib/
-    supabase/                # browser/server clients + session middleware
-    prisma.ts                # Prisma client singleton
-    auth.ts                  # getUser() helper
-prisma/
-  schema.prisma             # Profile, Card, Square, Completion
+    firebase/                 # client.ts (browser SDK), admin.ts (server SDK)
+    firestore/                # profiles.ts, cards.ts — Admin SDK data access
+    auth.ts                   # getUser() helper (verifies the session cookie)
+firestore.rules               # denies all direct client access
+firebase.json                 # points the Firebase CLI at firestore.rules
 docs/
   ARCHITECTURE.md           # how it fits together + the data model
   BACKLOG.md                # the full task list (mirrors GitHub Issues)
@@ -125,9 +125,9 @@ docs/
 
 1. Import the repo into Vercel.
 2. Add all variables from `.env.example` to the Vercel project.
-3. Set `NEXT_PUBLIC_SITE_URL` to your production URL and add
-   `<your-url>/auth/callback` to Supabase's redirect allow-list.
-4. Deploy. `prisma generate` runs automatically on install.
+3. Add your Vercel production domain to Firebase Authentication's
+   **Authorized domains** list.
+4. Deploy.
 
 ## Contributing
 
