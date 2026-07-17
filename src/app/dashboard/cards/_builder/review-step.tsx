@@ -9,22 +9,28 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { freeSpacePosition } from "@/lib/cards/grid";
-import { saveCard } from "../new/actions";
 import type { PositionedSquareDraft } from "./positions";
-import type { CardSettings } from "./types";
+import type { CardSettings, SaveCardResult } from "./types";
 
 type ReviewSquare =
   | (PositionedSquareDraft & { isFreeSpace?: false })
   | { position: number; label: string; isFreeSpace: true };
 
 export function ReviewStep({
+  mode = "create",
   settings,
   squares,
   onBack,
+  onSave,
 }: {
+  mode?: "create" | "edit";
   settings: CardSettings;
   squares: PositionedSquareDraft[];
   onBack: () => void;
+  onSave: (
+    settings: CardSettings,
+    squares: PositionedSquareDraft[],
+  ) => Promise<SaveCardResult>;
 }) {
   const [isPending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
@@ -47,7 +53,7 @@ export function ReviewStep({
   const handleSave = () => {
     setError(null);
     startTransition(async () => {
-      const result = await saveCard(settings, squares);
+      const result = await onSave(settings, squares);
       if (!result.ok) {
         setError(result.error);
       }
@@ -57,7 +63,9 @@ export function ReviewStep({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Review your card 🎉</CardTitle>
+        <CardTitle>
+          {mode === "edit" ? "Review your changes 🎉" : "Review your card 🎉"}
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <p className="text-muted-foreground">
@@ -89,7 +97,11 @@ export function ReviewStep({
             ← Back
           </Button>
           <Button onClick={handleSave} disabled={isPending} className="self-end">
-            {isPending ? "Saving…" : "Save card"}
+            {isPending
+              ? "Saving…"
+              : mode === "edit"
+                ? "Save changes"
+                : "Save card"}
           </Button>
         </div>
       </CardContent>
