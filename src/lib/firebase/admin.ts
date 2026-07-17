@@ -10,6 +10,7 @@ const globalForFirebaseAdmin = globalThis as unknown as {
 
 const adminApp =
   globalForFirebaseAdmin.firebaseAdminApp ??
+  getApps()[0] ??
   initializeApp({
     credential: cert({
       projectId: envServer.firebaseAdmin.projectId,
@@ -18,7 +19,7 @@ const adminApp =
     }),
   });
 
-if (process.env.NODE_ENV !== "production" && getApps().length) {
+if (process.env.NODE_ENV !== "production") {
   globalForFirebaseAdmin.firebaseAdminApp = adminApp;
 }
 
