@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithPopup } from "firebase/auth";
+import { getRedirectResult, signInWithRedirect } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/button";
 
@@ -17,25 +17,50 @@ export function GoogleSignInButton({
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // Completes sign-in after Google redirects back to this page.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function completeRedirectSignIn() {
+      try {
+        const result = await getRedirectResult(auth);
+        if (!result || cancelled) return;
+
+        setLoading(true);
+        const idToken = await result.user.getIdToken();
+
+        const response = await fetch("/api/auth/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to establish session");
+        }
+
+        router.push("/dashboard");
+        router.refresh();
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Google sign-in failed", error);
+          setLoading(false);
+        }
+      }
+    }
+
+    void completeRedirectSignIn();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
   async function signIn() {
     setLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const idToken = await result.user.getIdToken();
-
-      const response = await fetch("/api/auth/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to establish session");
-      }
-
-      router.push("/dashboard");
-      router.refresh();
-    } catch {
+      await signInWithRedirect(auth, googleProvider);
+    } catch (error) {
+      console.error("Google sign-in failed", error);
       setLoading(false);
     }
   }
