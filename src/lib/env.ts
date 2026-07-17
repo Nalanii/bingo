@@ -9,13 +9,35 @@ function required(name: string, value: string | undefined): string {
 }
 
 export const env = {
-  supabaseUrl: required(
-    "NEXT_PUBLIC_SUPABASE_URL",
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-  ),
-  supabaseAnonKey: required(
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  ),
+  firebase: {
+    apiKey: required(
+      "NEXT_PUBLIC_FIREBASE_API_KEY",
+      process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    ),
+    authDomain: required(
+      "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",
+      process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    ),
+    projectId: required(
+      "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    ),
+    appId: required(
+      "NEXT_PUBLIC_FIREBASE_APP_ID",
+      process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    ),
+  },
+  firebaseAdmin: {
+    projectId: required("FIREBASE_PROJECT_ID", process.env.FIREBASE_PROJECT_ID),
+    clientEmail: required(
+      "FIREBASE_CLIENT_EMAIL",
+      process.env.FIREBASE_CLIENT_EMAIL,
+    ),
+    // Vercel/`.env` files store literal "\n" in the private key; restore real newlines.
+    privateKey: required(
+      "FIREBASE_PRIVATE_KEY",
+      process.env.FIREBASE_PRIVATE_KEY,
+    ).replace(/\\n/g, "\n"),
+  },
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
 };
