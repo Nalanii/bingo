@@ -82,9 +82,18 @@ git commit -m "chore: swap Supabase/Prisma deps for Firebase"
 
 **Files:**
 - Modify: `src/lib/env.ts`
+- Create: `src/lib/env.server.ts`
 - Modify: `.env.example`
 
-- [ ] **Step 1: Rewrite `src/lib/env.ts`**
+**Why two files:** `src/lib/firebase/client.ts` (Task 3) is imported by Client
+Components (e.g. the sign-in button) and only needs the `NEXT_PUBLIC_*`
+Firebase config. If Admin SDK credential checks lived in the same module,
+importing it from client code would evaluate `required("FIREBASE_PRIVATE_KEY",
+...)` in the browser bundle — where that var is never inlined — and throw at
+import time. Keeping Admin-only config in a separate `env.server.ts`, imported
+only by `src/lib/firebase/admin.ts` (Task 4), avoids that entirely.
+
+- [ ] **Step 1: Rewrite `src/lib/env.ts`** (client-safe config only)
 
 ```typescript
 /** Small helper to read required public env vars with a clear error. */
@@ -116,6 +125,24 @@ export const env = {
       process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
     ),
   },
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+};
+```
+
+- [ ] **Step 2: Create `src/lib/env.server.ts`** (Admin SDK config — imported only by server-only modules, never by Client Components)
+
+```typescript
+/** Small helper to read required server-only env vars with a clear error. */
+function required(name: string, value: string | undefined): string {
+  if (!value) {
+    throw new Error(
+      `Missing environment variable: ${name}. See .env.example for setup.`,
+    );
+  }
+  return value;
+}
+
+export const envServer = {
   firebaseAdmin: {
     projectId: required("FIREBASE_PROJECT_ID", process.env.FIREBASE_PROJECT_ID),
     clientEmail: required(
@@ -128,11 +155,10 @@ export const env = {
       process.env.FIREBASE_PRIVATE_KEY,
     ).replace(/\\n/g, "\n"),
   },
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
 };
 ```
 
-- [ ] **Step 2: Rewrite `.env.example`**
+- [ ] **Step 3: Rewrite `.env.example`**
 
 ```bash
 # ---------------------------------------------------------------------------
@@ -158,10 +184,10 @@ FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_KEY_HERE\n-----END PRIVA
 NEXT_PUBLIC_SITE_URL="http://localhost:3000"
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add src/lib/env.ts .env.example
+git add src/lib/env.ts src/lib/env.server.ts .env.example
 git commit -m "chore: replace Supabase env vars with Firebase config"
 ```
 
@@ -220,7 +246,7 @@ git commit -m "feat: add Firebase client SDK init"
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
-import { env } from "@/lib/env";
+import { envServer } from "@/lib/env.server";
 
 // Reuse a single Admin app across hot reloads / serverless invocations.
 const globalForFirebaseAdmin = globalThis as unknown as {
@@ -229,15 +255,16 @@ const globalForFirebaseAdmin = globalThis as unknown as {
 
 const adminApp =
   globalForFirebaseAdmin.firebaseAdminApp ??
+  getApps()[0] ??
   initializeApp({
     credential: cert({
-      projectId: env.firebaseAdmin.projectId,
-      clientEmail: env.firebaseAdmin.clientEmail,
-      privateKey: env.firebaseAdmin.privateKey,
+      projectId: envServer.firebaseAdmin.projectId,
+      clientEmail: envServer.firebaseAdmin.clientEmail,
+      privateKey: envServer.firebaseAdmin.privateKey,
     }),
   });
 
-if (process.env.NODE_ENV !== "production" && getApps().length) {
+if (process.env.NODE_ENV !== "production") {
   globalForFirebaseAdmin.firebaseAdminApp = adminApp;
 }
 
@@ -430,23 +457,34 @@ const SESSION_EXPIRES_IN_MS = 14 * 24 * 60 * 60 * 1000; // 2 weeks
  * the user's profile doc. Called by the client right after Google sign-in.
  */
 export async function POST(request: Request) {
-  const { idToken } = (await request.json()) as { idToken?: string };
+  let idToken: string | undefined;
+  try {
+    ({ idToken } = (await request.json()) as { idToken?: string });
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
 
   if (!idToken) {
     return NextResponse.json({ error: "Missing idToken" }, { status: 400 });
   }
 
-  const decoded = await adminAuth.verifyIdToken(idToken);
-
-  const sessionCookie = await adminAuth.createSessionCookie(idToken, {
-    expiresIn: SESSION_EXPIRES_IN_MS,
-  });
+  let decoded;
+  let sessionCookie;
+  try {
+    decoded = await adminAuth.verifyIdToken(idToken);
+    sessionCookie = await adminAuth.createSessionCookie(idToken, {
+      expiresIn: SESSION_EXPIRES_IN_MS,
+    });
+  } catch (error) {
+    console.error("session route: failed to verify/exchange idToken", error);
+    return NextResponse.json({ error: "Invalid or expired idToken" }, { status: 401 });
+  }
 
   await upsertProfile({
     uid: decoded.uid,
     email: decoded.email ?? null,
-    displayName: (decoded.name as string | undefined) ?? null,
-    avatarUrl: (decoded.picture as string | undefined) ?? null,
+    displayName: typeof decoded.name === "string" ? decoded.name : null,
+    avatarUrl: decoded.picture ?? null,
   });
 
   const cookieStore = await cookies();
@@ -495,20 +533,30 @@ git commit -m "feat: add session cookie route handler, remove Supabase auth rout
 
 ---
 
-### Task 8: Middleware on the Node.js runtime
+### Task 8: Route protection on the Node.js runtime (`proxy.ts`)
 
 **Files:**
-- Modify: `src/middleware.ts`
+- Create: `src/proxy.ts`
+- Delete: `src/middleware.ts`
 - Delete: `src/lib/supabase/middleware.ts`
 
-- [ ] **Step 1: Rewrite `src/middleware.ts`**
+**Naming note:** Next.js 16 deprecated the `middleware.ts` file convention in
+favor of `proxy.ts` (same mechanism, new name — `export function proxy`
+instead of `export function middleware`). Next.js 16.2.10 (this project's
+version) still runs `middleware.ts` but emits a build-time deprecation
+warning; `proxy.ts` is the current, non-deprecated convention, and — unlike
+`middleware.ts` — a Proxy file **always** runs on Node.js, so a `runtime` key
+in its `config` export is invalid (`Route segment config is not allowed in
+Proxy file`). Use `proxy.ts` with no `runtime` key.
+
+- [ ] **Step 1: Create `src/proxy.ts`**
 
 ```typescript
 import { NextResponse, type NextRequest } from "next/server";
 import { adminAuth } from "@/lib/firebase/admin";
 
 /** Gates everything under /dashboard behind a valid Firebase session cookie. */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const isPrivate = request.nextUrl.pathname.startsWith("/dashboard");
   if (!isPrivate) return NextResponse.next();
 
@@ -535,7 +583,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  runtime: "nodejs",
   // Run on all paths except static assets and images.
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
@@ -543,17 +590,17 @@ export const config = {
 };
 ```
 
-- [ ] **Step 2: Delete the old Supabase middleware helper**
+- [ ] **Step 2: Delete the old middleware files**
 
 ```bash
-git rm src/lib/supabase/middleware.ts
+git rm src/middleware.ts src/lib/supabase/middleware.ts
 ```
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add src/middleware.ts
-git commit -m "feat: verify Firebase session cookie in Node.js middleware"
+git add src/proxy.ts
+git commit -m "feat: verify Firebase session cookie in Node.js proxy (formerly middleware)"
 ```
 
 ---
@@ -565,12 +612,19 @@ git commit -m "feat: verify Firebase session cookie in Node.js middleware"
 
 - [ ] **Step 1: Rewrite the component**
 
+**Popup vs. redirect:** use `signInWithRedirect` + `getRedirectResult`, not
+`signInWithPopup`. This app is mobile-first (AGENTS.md golden rule), and
+popup-based OAuth is known to fail on iOS Safari private browsing and in-app
+webviews (Instagram/X/Facebook link previews) — Google's own
+`disallowed_useragent` policy blocks it outright in some of those contexts.
+Redirect-based sign-in works everywhere a full page navigation works.
+
 ```tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithPopup } from "firebase/auth";
+import { getRedirectResult, signInWithRedirect } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/button";
 
@@ -585,25 +639,50 @@ export function GoogleSignInButton({
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // Completes sign-in after Google redirects back to this page.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function completeRedirectSignIn() {
+      try {
+        const result = await getRedirectResult(auth);
+        if (!result || cancelled) return;
+
+        setLoading(true);
+        const idToken = await result.user.getIdToken();
+
+        const response = await fetch("/api/auth/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to establish session");
+        }
+
+        router.push("/dashboard");
+        router.refresh();
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Google sign-in failed", error);
+          setLoading(false);
+        }
+      }
+    }
+
+    void completeRedirectSignIn();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
   async function signIn() {
     setLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const idToken = await result.user.getIdToken();
-
-      const response = await fetch("/api/auth/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to establish session");
-      }
-
-      router.push("/dashboard");
-      router.refresh();
-    } catch {
+      await signInWithRedirect(auth, googleProvider);
+    } catch (error) {
+      console.error("Google sign-in failed", error);
       setLoading(false);
     }
   }
@@ -672,7 +751,15 @@ export function SignOutButton() {
 
   async function handleSignOut() {
     setLoading(true);
-    await Promise.all([signOut(auth), fetch("/api/auth/session", { method: "DELETE" })]);
+    const results = await Promise.allSettled([
+      signOut(auth),
+      fetch("/api/auth/session", { method: "DELETE" }),
+    ]);
+    for (const result of results) {
+      if (result.status === "rejected") {
+        console.error("Sign out failed", result.reason);
+      }
+    }
     router.push("/");
     router.refresh();
   }
@@ -845,11 +932,14 @@ git commit -m "chore: remove Supabase and Prisma"
 
 ---
 
-### Task 13: Firestore security rules
+### Task 13: Firestore security rules and indexes
 
 **Files:**
 - Create: `firestore.rules`
+- Create: `firestore.indexes.json`
 - Create: `firebase.json`
+
+**Why indexes are needed:** `listCardsByOwner` (Task 5, `src/lib/firestore/cards.ts`) queries `cards` with `.where("ownerId", "==", ownerId).orderBy("updatedAt", "desc")`. Firestore requires a composite index for an equality filter combined with `orderBy` on a different field — without one, this query throws `FAILED_PRECONDITION` the first time it runs against a real Firestore project.
 
 - [ ] **Step 1: Write `firestore.rules`**
 
@@ -868,27 +958,46 @@ service cloud.firestore {
 }
 ```
 
-- [ ] **Step 2: Write `firebase.json`**
+- [ ] **Step 2: Write `firestore.indexes.json`**
+
+```json
+{
+  "indexes": [
+    {
+      "collectionGroup": "cards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerId", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
+```
+
+- [ ] **Step 3: Write `firebase.json`**
 
 ```json
 {
   "firestore": {
-    "rules": "firestore.rules"
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
   }
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add firestore.rules firebase.json
-git commit -m "feat: deny direct client access to Firestore"
+git add firestore.rules firestore.indexes.json firebase.json
+git commit -m "feat: deny direct client access to Firestore, add cards query index"
 ```
 
-Note for the engineer: deploying these rules requires the Firebase CLI
-(`npx firebase-tools deploy --only firestore:rules`) authenticated against the
-project — this is a one-time manual step outside this repo's CI, documented
-in Task 15.
+Note for the engineer: deploying these requires the Firebase CLI
+(`npx firebase-tools deploy --only firestore:rules,firestore:indexes`)
+authenticated against the project — this is a one-time manual step outside
+this repo's CI, documented in Task 15.
 
 ---
 
@@ -922,7 +1031,14 @@ jobs:
       NEXT_PUBLIC_FIREBASE_APP_ID: "ci-placeholder-app-id"
       FIREBASE_PROJECT_ID: "example-project"
       FIREBASE_CLIENT_EMAIL: "firebase-adminsdk-xxxxx@example-project.iam.gserviceaccount.com"
-      FIREBASE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nplaceholder\n-----END PRIVATE KEY-----\n"
+      # A syntactically valid (but fake, freshly generated, never used
+      # anywhere real) RSA private key. Firebase Admin's cert() parses the
+      # PEM body at import time, so a non-PEM placeholder string breaks the
+      # build step outright — it must be real PEM, just not a real key.
+      # NOTE: if a secret scanner flags this line, it is a known false
+      # positive — this key was generated solely for CI and is not tied to
+      # any real Firebase project or credential.
+      FIREBASE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCxYrDIjH2Qa1yy\ndFKSsGulubGcHfUQffMjVarAeZXie7UfMER9X/1eGAzN63uUDoojYuL/F0CEQTAj\nEYOIYaRRzDvH7b7IoLt7ZUYRb+kR1GV6zs2hG7OFQFfUd+MlfBTo3iti9agqmCqv\n2TDRE2lJ5aowGKJvtoW79IKuWqR2+qXxymFjGo0TCE9L5FmhaVMWg+qe4tLMnrRh\nu2I8HEtK+n4xSYaI5RtFKnRlKG/ggqW5lO2FyKNGohtDIcR3sIZdw6vFrCjf0WNY\nzewFMFEGxFzoCGE/nnI6vxXYqMwLh0khdXSzrSD0Mz7tKWkFvOiV91Cwp+ezvczS\nNqMK5xtdAgMBAAECggEAAzlrQ7X0CVY+QNsm7hYpWsGRliggPny/mOaTfDypigyc\nGfVHZW0DfryarPqJDEOoZKTFQgRC7rR9osGMfcPil/8JniR26ZAsYD2SxLnfR2zw\nLEeKitFlVbh58Dl+pj2HZsU1Di8vb5jE+93Lip1a9lYnngiwmS286BH1dyRcJXJ4\nnod86FllD6iuMLozrmUh237winP73eNIUPxC+4aGQun5DCdDA5V4zuaprKcgkb7v\nUW9/HWpUghJ/ZReWaQKVQumR09hdRd+d03f/hvIejS0+kVkgXJpp4x8VeuFykp4i\nam3G8S4FIUY+sjYi8HBsLBpWPlbReboTj3w43ClD2QKBgQDpuGxYTVOEMesSHXBq\ntyA+MPJCpMgejNKWm8u3FlrFPZd8+yRn8U0WtdYEA/6jAkEXP0wBALrk0bU6F11E\nFkeNN8iiNJy3BaT/Z5/zTJbMl4WDNK+bJhBzxcdlOQUY1n+sWcpNz4Db+TlIffFl\n0s4RAQkUmi71YS+Bnxeuumn8OQKBgQDCS4Dc54JJLT6UuCxkH1oqabj5m8H9LoT+\ngFhweMJ7ltGiCYpa9WadKpn/KqzJucaerUGNf78pHzuKRzmRY+/DzOMUAfL/sGYn\n2/E1mokvfDyz27TQQhyVGDDHJFsgoZBIJjyqy66ze7qFB7n+q3fRLtnaKbFYEW4M\n+Ql/YUcgRQKBgQDOveh5I82gvldmKsxqWZsX6EwkT4cGHyOZPi8xwYCBwT3jvHQz\nzeuXDzpFSxNQNopFeiRNLswj5K0eudQyilK4xIOhmFCYRVHy60M+AJ3UVKQxr8U2\nxLEA+A6tp4aute8yEis2MTuXWhol2eJTY+oMeJIDu2+Wd2WCj6xvT065YQKBgCTS\n9JBpnErMNXEwWtF7E7a4JOPB/olCuNgXcSuX55xO4FpqnntQyWr+OQOgjfEJsbg/\nNA5iaNOdZMZ3a1S/8SBWA6+2Et0dDK9/Qv8a0+dZD5QzDtjtvscPN6d2n4LWvCbA\ngH0Kb4j66UXvSfQXgXT3ATkU79S2MPpqdL9cq4NVAoGBAIkCywwNaeCZAwEFq2XK\n28odP3mzCJ5Olc8i+pLNAXau/z6cJDw9Ey/zW3fS0Cr7XDPC0c2NGUTKWF9TedyJ\nrWsWFL8ZeuM3WK5MqDS/sfvosZ4Kteoq8fSlOQ4BDL6RWauCQm8ML+WTpXolaZyD\nHQWRw4R15ik72wb3FI6UBKrt\n-----END PRIVATE KEY-----\n"
       NEXT_PUBLIC_SITE_URL: "http://localhost:3000"
 
     steps:
@@ -959,9 +1075,21 @@ git commit -m "ci: use Firebase env vars, drop Prisma generate step"
 
 **Files:**
 - Modify: `AGENTS.md`
+- Modify: `CLAUDE.md`
 - Modify: `docs/ARCHITECTURE.md`
 - Modify: `README.md`
 - Modify: `docs/BACKLOG.md`
+
+- [ ] **Step 0: Update `CLAUDE.md`**
+
+Change line 10 from:
+```
+- Auth is Google-only (Supabase); data access is Prisma-only.
+```
+to:
+```
+- Auth is Google-only (Firebase); data access is Firestore via the Admin SDK only.
+```
 
 - [ ] **Step 1: Update `AGENTS.md`**
 
@@ -1011,19 +1139,24 @@ Browser ──► Next.js (App Router, on Vercel)
   app lives under `/dashboard`.
 - **Firebase Auth** handles Google sign-in. The client SDK signs the user in,
   then a session cookie is minted server-side and verified on every request by
-  `src/middleware.ts` (Node.js runtime).
+  `src/proxy.ts` (Node.js runtime — Next.js's post-16 name for what used to be
+  `middleware.ts`).
 - **Firestore, via the Admin SDK, is the only way we touch the database** —
   there is no client-side Firestore SDK usage anywhere in the app.
 
 ## Auth flow
 
 1. User clicks **Continue with Google** (`GoogleSignInButton`, a client
-   component), which calls `signInWithPopup` with the Firebase JS SDK.
-2. The client gets a Firebase ID token and POSTs it to
-   `/api/auth/session`.
+   component), which calls `signInWithRedirect` with the Firebase JS SDK
+   (not a popup — popups are unreliable on iOS Safari and in-app webviews).
+2. Google redirects back to the app; a `useEffect` calls `getRedirectResult`,
+   gets the Firebase ID token, and POSTs it to `/api/auth/session`.
 3. That route handler verifies the ID token with the Admin SDK, mints an
    HTTP-only session cookie, and **upserts** a `profiles/{uid}` Firestore doc.
-4. Middleware guards `/dashboard/*`: no valid session cookie → redirect to `/`.
+4. `src/proxy.ts` guards `/dashboard/*`: no valid session cookie → redirect to
+   `/`. `dashboard/page.tsx` also redirects defensively if `getUser()` returns
+   null (closes a narrow gap where a revoked-but-unexpired cookie passes the
+   proxy's check but fails the stricter revocation check inside `getUser()`).
 5. Sign out calls Firebase's client `signOut()` and sends `DELETE
    /api/auth/session`, which clears the cookie and revokes refresh tokens.
 
@@ -1160,7 +1293,10 @@ Change the two completed-item lines:
 to:
 ```
 - [x] Firebase Google-only auth (sign in/out, session cookie, middleware)
-- [x] Firestore data model: profiles, cards (embedded squares), completions
+- [x] Firestore data model: profiles, cards (embedded squares)
+- [ ] Firestore completions data-access helper (design documented in
+      docs/ARCHITECTURE.md; not yet implemented — no completions feature
+      exists in the app to use it yet)
 ```
 
 Change:
@@ -1184,7 +1320,7 @@ to:
 - [ ] **Step 5: Commit**
 
 ```bash
-git add AGENTS.md docs/ARCHITECTURE.md README.md docs/BACKLOG.md
+git add AGENTS.md CLAUDE.md docs/ARCHITECTURE.md README.md docs/BACKLOG.md
 git commit -m "docs: describe Firebase + Firestore architecture"
 ```
 
