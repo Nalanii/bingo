@@ -76,6 +76,11 @@ export function CardBuilder({
           // grid size and free space are locked, so the square count never
           // changes — re-attach each square to its original position instead
           // of reshuffling.
+          if (mode === "edit" && !initialSquares) {
+            throw new Error(
+              "CardBuilder: mode is 'edit' but initialSquares was not provided",
+            );
+          }
           setPositionedSquares(
             mode === "edit" && initialSquares
               ? attachExistingPositions(nextSquares, initialSquares)
