@@ -1,11 +1,7 @@
+import { freeSpacePosition } from "@/lib/cards/grid";
 import type { CardSettings, SquareDraft } from "./types";
 
 export type PositionedSquareDraft = SquareDraft & { position: number };
-
-/** The free space always sits in the center slot of an odd-sized grid. */
-function freeSpacePosition(gridSize: number): number {
-  return Math.floor((gridSize * gridSize) / 2);
-}
 
 function shuffled<T>(items: readonly T[]): T[] {
   const result = [...items];

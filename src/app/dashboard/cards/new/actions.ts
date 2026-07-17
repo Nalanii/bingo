@@ -2,15 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
+import { freeSpacePosition } from "@/lib/cards/grid";
 import { createCard, type Square } from "@/lib/firestore/cards";
 import type { PositionedSquareDraft } from "./positions";
 import type { CardSettings } from "./types";
 
 export type SaveCardResult = { ok: true } | { ok: false; error: string };
-
-function freeSpacePosition(gridSize: number): number {
-  return Math.floor((gridSize * gridSize) / 2);
-}
 
 /** Validates a builder draft and persists it as a new card for the current user. */
 export async function saveCard(
