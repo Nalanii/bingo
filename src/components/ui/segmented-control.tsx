@@ -23,12 +23,17 @@ export function SegmentedControl({
   className,
   ...props
 }: SegmentedControlProps) {
+  const buttonRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
+
   const handleKeyDown = (event: React.KeyboardEvent, index: number) => {
     if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
     event.preventDefault();
     const delta = event.key === "ArrowRight" ? 1 : -1;
     const nextIndex = (index + delta + options.length) % options.length;
     onChange(options[nextIndex].value);
+    // Move focus with the selection, or the next arrow press fires on the
+    // now-stale button and recomputes from its (unchanged) index forever.
+    buttonRefs.current[nextIndex]?.focus();
   };
 
   return (
@@ -45,6 +50,9 @@ export function SegmentedControl({
         return (
           <button
             key={option.value}
+            ref={(el) => {
+              buttonRefs.current[index] = el;
+            }}
             type="button"
             role="radio"
             aria-checked={selected}
