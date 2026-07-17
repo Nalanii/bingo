@@ -13,13 +13,14 @@ export function SignOutButton() {
 
   async function handleSignOut() {
     setLoading(true);
-    try {
-      await Promise.allSettled([
-        signOut(auth),
-        fetch("/api/auth/session", { method: "DELETE" }),
-      ]);
-    } catch (error) {
-      console.error("Sign out failed", error);
+    const results = await Promise.allSettled([
+      signOut(auth),
+      fetch("/api/auth/session", { method: "DELETE" }),
+    ]);
+    for (const result of results) {
+      if (result.status === "rejected") {
+        console.error("Sign out failed", result.reason);
+      }
     }
     router.push("/");
     router.refresh();
