@@ -59,8 +59,8 @@ npm run typecheck
 npm run build
 ```
 
-Format with `npm run format`. Update `docs/BACKLOG.md` and close the matching
-GitHub Issue when you finish a tracked task.
+Format with `npm run format`. Close the matching GitHub Issue when you
+finish a tracked task.
 
 ## Commit style — Conventional Commits
 

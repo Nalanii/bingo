@@ -8,8 +8,8 @@ list — as a **3×3** or **5×5** grid. Fill each square with a one-and-done ch
 off and chase that **BINGO**.
 
 > **Status:** early days. Auth, the data model, and a funky stub site are in
-> place. The card builder and play experience are the next milestones — see the
-> [backlog](docs/BACKLOG.md).
+> place. The card builder and play experience are the next milestones — see
+> the [GitHub Issues](../../issues) board.
 
 > _"Bingoal" is a working name and can change._
 
@@ -118,7 +118,6 @@ firestore.rules               # denies all direct client access
 firebase.json                 # points the Firebase CLI at firestore.rules
 docs/
   ARCHITECTURE.md           # how it fits together + the data model
-  BACKLOG.md                # the full task list (mirrors GitHub Issues)
 ```
 
 ## Deploying to Vercel
@@ -131,9 +130,8 @@ docs/
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions (commits, branches,
-code style). The build/architecture guide for automated contributors lives in
-[AGENTS.md](AGENTS.md).
+Work is tracked as [GitHub Issues](../../issues). Conventions (stack, commit
+style, checks to run before a PR) live in [AGENTS.md](AGENTS.md).
 
 ## License
 
