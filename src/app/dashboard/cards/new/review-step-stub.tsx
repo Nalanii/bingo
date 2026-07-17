@@ -7,7 +7,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { CardSettings, SquareDraft } from "./types";
+import type { PositionedSquareDraft } from "./positions";
+import type { CardSettings } from "./types";
 
 export function ReviewStepStub({
   settings,
@@ -15,9 +16,13 @@ export function ReviewStepStub({
   onBack,
 }: {
   settings: CardSettings;
-  squares: SquareDraft[];
+  squares: PositionedSquareDraft[];
   onBack: () => void;
 }) {
+  // Sorted by position so RANDOM cards show their shuffled grid order, not
+  // entry order.
+  const orderedSquares = [...squares].sort((a, b) => a.position - b.position);
+
   return (
     <Card>
       <CardHeader>
@@ -31,9 +36,9 @@ export function ReviewStepStub({
           {settings.layout === "RANDOM" ? "random" : "set"} order
         </p>
         <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
-          {squares.map((square, index) => (
-            <li key={index}>
-              {index + 1}. {square.label} ·{" "}
+          {orderedSquares.map((square) => (
+            <li key={square.position}>
+              Slot {square.position + 1}: {square.label} ·{" "}
               {square.kind === "COUNTER"
                 ? `counter to ${square.goal}`
                 : "check"}
