@@ -75,14 +75,18 @@ export function CardBuilder({
           // (and later, once persisted, on every future visit). In edit mode,
           // grid size and free space are locked, so the square count never
           // changes — re-attach each square to its original position instead
-          // of reshuffling.
+          // of reshuffling, but only when the layout hasn't changed; if the
+          // user flipped RANDOM/SET during the edit, fall through to
+          // assignPositions so the new layout actually takes effect.
           if (mode === "edit" && !initialSquares) {
             throw new Error(
               "CardBuilder: mode is 'edit' but initialSquares was not provided",
             );
           }
+          const layoutUnchanged =
+            mode === "edit" && settings.layout === initialSettings?.layout;
           setPositionedSquares(
-            mode === "edit" && initialSquares
+            layoutUnchanged && initialSquares
               ? attachExistingPositions(nextSquares, initialSquares)
               : assignPositions(nextSquares, settings),
           );
