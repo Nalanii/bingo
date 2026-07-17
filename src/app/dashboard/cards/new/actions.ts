@@ -5,9 +5,7 @@ import { getUser } from "@/lib/auth";
 import { freeSpacePosition } from "@/lib/cards/grid";
 import { createCard, type Square } from "@/lib/firestore/cards";
 import type { PositionedSquareDraft } from "../_builder/positions";
-import type { CardSettings } from "../_builder/types";
-
-export type SaveCardResult = { ok: true } | { ok: false; error: string };
+import type { CardSettings, SaveCardResult } from "../_builder/types";
 
 /** Validates a builder draft and persists it as a new card for the current user. */
 export async function saveCard(

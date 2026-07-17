@@ -12,3 +12,5 @@ export type SquareDraft = {
   kind: SquareKind;
   goal: number;
 };
+
+export type SaveCardResult = { ok: true } | { ok: false; error: string };
