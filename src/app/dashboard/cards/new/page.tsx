@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { CardBuilder } from "../_builder/card-builder";
+import { saveCard } from "./actions";
 
 export default async function NewCardPage() {
   const user = await getUser();
@@ -15,7 +16,7 @@ export default async function NewCardPage() {
       <Link href="/dashboard" className="text-sm text-muted-foreground">
         ← Back to your cards
       </Link>
-      <CardBuilder />
+      <CardBuilder mode="create" onSave={saveCard} />
     </div>
   );
 }
