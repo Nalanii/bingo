@@ -23,10 +23,13 @@ Browser ──► Next.js (App Router, on Vercel)
 ## Auth flow
 
 1. User clicks **Continue with Google** (`GoogleSignInButton`, a client
-   component), which calls `signInWithRedirect` with the Firebase JS SDK
-   (not a popup — popups are unreliable on iOS Safari and in-app webviews).
-2. Google redirects back to the app; a `useEffect` calls `getRedirectResult`,
-   gets the Firebase ID token, and POSTs it to `/api/auth/session`.
+   component), which calls `signInWithPopup` with the Firebase JS SDK.
+   (`signInWithRedirect` was tried first but dropped — its completion relies
+   on cross-origin storage access to the `authDomain`, which modern browsers'
+   third-party storage partitioning frequently blocks, silently failing sign-in
+   with no error. Popup avoids that failure mode entirely.)
+2. On success, the client gets the Firebase ID token and POSTs it to
+   `/api/auth/session`.
 3. That route handler verifies the ID token with the Admin SDK, mints an
    HTTP-only session cookie, and **upserts** a `profiles/{uid}` Firestore doc.
 4. `src/proxy.ts` guards `/dashboard/*`: no valid session cookie → redirect to
