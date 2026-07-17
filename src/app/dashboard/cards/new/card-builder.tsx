@@ -3,7 +3,7 @@
 import * as React from "react";
 import { CardSettingsStep } from "./card-settings-step";
 import { assignPositions, type PositionedSquareDraft } from "./positions";
-import { ReviewStepStub } from "./review-step-stub";
+import { ReviewStep } from "./review-step";
 import { SquareEntryStep } from "./square-entry-step";
 import type { CardSettings, SquareDraft } from "./types";
 
@@ -28,7 +28,7 @@ export function CardBuilder() {
   // defaultValues-seeded local state will go stale.
   if (step === 3) {
     return (
-      <ReviewStepStub
+      <ReviewStep
         settings={settings}
         squares={positionedSquares}
         onBack={() => setStep(2)}
