@@ -23,6 +23,7 @@ export interface CardSummary {
 
 /** Lists a user's cards, newest-updated first, with each card's square count. */
 export async function listCardsByOwner(ownerId: string): Promise<CardSummary[]> {
+  // Requires a Firestore composite index on cards (ownerId ASC, updatedAt DESC); see firestore.indexes.json.
   const snapshot = await db
     .collection("cards")
     .where("ownerId", "==", ownerId)
