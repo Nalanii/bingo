@@ -21,6 +21,34 @@ export interface CardSummary {
   squareCount: number;
 }
 
+export interface CreateCardInput {
+  ownerId: string;
+  name: string;
+  gridSize: number;
+  hasFreeSpace: boolean;
+  layout: CardLayout;
+  squares: Square[];
+}
+
+/** Creates a new card doc and returns its generated id. */
+export async function createCard(input: CreateCardInput): Promise<string> {
+  const now = new Date();
+  const ref = db.collection("cards").doc();
+
+  await ref.set({
+    ownerId: input.ownerId,
+    name: input.name,
+    gridSize: input.gridSize,
+    hasFreeSpace: input.hasFreeSpace,
+    layout: input.layout,
+    squares: input.squares,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  return ref.id;
+}
+
 /** Lists a user's cards, newest-updated first, with each card's square count. */
 export async function listCardsByOwner(ownerId: string): Promise<CardSummary[]> {
   // Requires a Firestore composite index on cards (ownerId ASC, updatedAt DESC); see firestore.indexes.json.
