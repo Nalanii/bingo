@@ -11,17 +11,28 @@ const SESSION_EXPIRES_IN_MS = 14 * 24 * 60 * 60 * 1000; // 2 weeks
  * the user's profile doc. Called by the client right after Google sign-in.
  */
 export async function POST(request: Request) {
-  const { idToken } = (await request.json()) as { idToken?: string };
+  let idToken: string | undefined;
+  try {
+    ({ idToken } = (await request.json()) as { idToken?: string });
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
 
   if (!idToken) {
     return NextResponse.json({ error: "Missing idToken" }, { status: 400 });
   }
 
-  const decoded = await adminAuth.verifyIdToken(idToken);
-
-  const sessionCookie = await adminAuth.createSessionCookie(idToken, {
-    expiresIn: SESSION_EXPIRES_IN_MS,
-  });
+  let decoded;
+  let sessionCookie;
+  try {
+    decoded = await adminAuth.verifyIdToken(idToken);
+    sessionCookie = await adminAuth.createSessionCookie(idToken, {
+      expiresIn: SESSION_EXPIRES_IN_MS,
+    });
+  } catch (error) {
+    console.error("session route: failed to verify/exchange idToken", error);
+    return NextResponse.json({ error: "Invalid or expired idToken" }, { status: 401 });
+  }
 
   await upsertProfile({
     uid: decoded.uid,
