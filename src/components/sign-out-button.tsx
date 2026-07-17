@@ -14,7 +14,10 @@ export function SignOutButton() {
   async function handleSignOut() {
     setLoading(true);
     try {
-      await Promise.all([signOut(auth), fetch("/api/auth/session", { method: "DELETE" })]);
+      await Promise.allSettled([
+        signOut(auth),
+        fetch("/api/auth/session", { method: "DELETE" }),
+      ]);
     } catch (error) {
       console.error("Sign out failed", error);
     }
