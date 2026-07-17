@@ -75,6 +75,7 @@ export function CardSettingsStep({
             value={String(gridSize)}
             onChange={(value) => setGridSize(value === "3" ? 3 : 5)}
             disabled={locked}
+            aria-describedby={locked ? "settings-locked-note" : undefined}
             options={[
               { value: "3", label: "3×3" },
               { value: "5", label: "5×5" },
@@ -92,11 +93,15 @@ export function CardSettingsStep({
             onChange={setHasFreeSpace}
             disabled={locked}
             aria-label="Free space in the center"
+            aria-describedby={locked ? "settings-locked-note" : undefined}
           />
         </div>
 
         {locked ? (
-          <p className="text-sm text-muted-foreground">
+          <p
+            id="settings-locked-note"
+            className="text-sm text-muted-foreground"
+          >
             Grid size and free space can&rsquo;t be changed after a card is
             created.
           </p>
