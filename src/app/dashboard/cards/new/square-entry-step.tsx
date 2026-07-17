@@ -124,6 +124,11 @@ export function SquareEntryStep({
                   className="w-20"
                   onChange={(event) =>
                     updateSquare(index, {
+                      goal: Number(event.target.value) || 0,
+                    })
+                  }
+                  onBlur={(event) =>
+                    updateSquare(index, {
                       goal: Math.max(2, Number(event.target.value) || 2),
                     })
                   }
