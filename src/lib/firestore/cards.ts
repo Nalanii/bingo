@@ -12,6 +12,16 @@ export interface Square {
   isFreeSpace: boolean;
 }
 
+export interface Card {
+  id: string;
+  ownerId: string;
+  name: string;
+  gridSize: number;
+  hasFreeSpace: boolean;
+  layout: CardLayout;
+  squares: Square[];
+}
+
 export interface CardSummary {
   id: string;
   name: string;
@@ -26,6 +36,12 @@ export interface CreateCardInput {
   name: string;
   gridSize: number;
   hasFreeSpace: boolean;
+  layout: CardLayout;
+  squares: Square[];
+}
+
+export interface UpdateCardInput {
+  name: string;
   layout: CardLayout;
   squares: Square[];
 }
@@ -47,6 +63,44 @@ export async function createCard(input: CreateCardInput): Promise<string> {
   });
 
   return ref.id;
+}
+
+/** Fetches a full card doc by id, or null if it doesn't exist. */
+export async function getCard(cardId: string): Promise<Card | null> {
+  const doc = await db.collection("cards").doc(cardId).get();
+  if (!doc.exists) return null;
+
+  const data = doc.data() as {
+    ownerId: string;
+    name: string;
+    gridSize: number;
+    hasFreeSpace: boolean;
+    layout: CardLayout;
+    squares: Square[];
+  };
+
+  return {
+    id: doc.id,
+    ownerId: data.ownerId,
+    name: data.name,
+    gridSize: data.gridSize,
+    hasFreeSpace: data.hasFreeSpace,
+    layout: data.layout,
+    squares: data.squares,
+  };
+}
+
+/** Updates a card's editable fields (name, layout, squares) and bumps updatedAt. */
+export async function updateCard(
+  cardId: string,
+  input: UpdateCardInput,
+): Promise<void> {
+  await db.collection("cards").doc(cardId).update({
+    name: input.name,
+    layout: input.layout,
+    squares: input.squares,
+    updatedAt: new Date(),
+  });
 }
 
 /** Lists a user's cards, newest-updated first, with each card's square count. */
