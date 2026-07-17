@@ -40,3 +40,20 @@ export function assignPositions(
     position: orderedPositions[index],
   }));
 }
+
+/**
+ * Re-attaches each edited square to its original position, by index. Only
+ * valid when the square count hasn't changed — grid size and free space are
+ * locked during edit, so `squares` and `initialSquares` are always the same
+ * length and in the same order, making this a direct pairing rather than a
+ * search.
+ */
+export function attachExistingPositions(
+  squares: SquareDraft[],
+  initialSquares: PositionedSquareDraft[],
+): PositionedSquareDraft[] {
+  return squares.map((square, index) => ({
+    ...square,
+    position: initialSquares[index].position,
+  }));
+}
