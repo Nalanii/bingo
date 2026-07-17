@@ -20,11 +20,14 @@ export async function getUser(): Promise<SessionUser | null> {
     return {
       uid: claims.uid,
       email: claims.email ?? null,
-      displayName: (claims.name as string | undefined) ?? null,
-      avatarUrl: (claims.picture as string | undefined) ?? null,
+      displayName: typeof claims.name === "string" ? claims.name : null,
+      avatarUrl: claims.picture ?? null,
     };
-  } catch {
-    // Expired, revoked, or malformed cookie.
+  } catch (error) {
+    // Expired, revoked, or malformed cookie — or a misconfigured Admin SDK.
+    // Log so credential/config issues are visible in server logs rather than
+    // silently manifesting as "every user appears logged out."
+    console.error("getUser: session cookie verification failed", error);
     return null;
   }
 }
