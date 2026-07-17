@@ -7,6 +7,7 @@ export interface SwitchProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   "aria-label"?: string;
+  "aria-describedby"?: string;
   id?: string;
   className?: string;
   disabled?: boolean;
@@ -27,6 +28,7 @@ export function Switch({
       id={id}
       aria-checked={checked}
       aria-label={props["aria-label"]}
+      aria-describedby={props["aria-describedby"]}
       disabled={disabled}
       onClick={() => !disabled && onChange(!checked)}
       className={cn(

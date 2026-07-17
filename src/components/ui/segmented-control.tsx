@@ -13,6 +13,7 @@ export interface SegmentedControlProps {
   value: string;
   onChange: (value: string) => void;
   "aria-label": string;
+  "aria-describedby"?: string;
   className?: string;
   disabled?: boolean;
 }
@@ -43,6 +44,7 @@ export function SegmentedControl({
     <div
       role="radiogroup"
       aria-label={props["aria-label"]}
+      aria-describedby={props["aria-describedby"]}
       aria-disabled={disabled || undefined}
       className={cn(
         "inline-flex rounded-full border-2 border-border bg-muted p-1",
