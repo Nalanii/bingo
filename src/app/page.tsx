@@ -30,7 +30,7 @@ export default async function Home() {
             <span className="text-secondary">I</span>
             <span className="text-success">N</span>
             <span className="text-primary">G</span>
-            <span className="text-accent-foreground">O</span>.
+            <span className="text-accent">O</span>.
           </h1>
           <p className="max-w-md text-lg text-muted-foreground">
             Build 3×3 or 5×5 cards for anything — a year of adventures, a reading
