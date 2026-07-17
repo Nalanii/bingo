@@ -12,7 +12,10 @@ each item below maps to one issue. Checked items are done.
 - [x] Scaffold Next.js 16 (App Router) + TypeScript + Tailwind v4
 - [x] shadcn/ui-style component base + funky design tokens
 - [x] Firebase Google-only auth (sign in/out, session cookie, middleware)
-- [x] Firestore data model: profiles, cards (embedded squares), completions
+- [x] Firestore data model: profiles, cards (embedded squares)
+- [ ] Firestore completions data-access helper (design documented in
+      docs/ARCHITECTURE.md; not yet implemented — no completions feature
+      exists in the app to use it yet)
 - [x] Funky landing page + protected dashboard stub
 - [x] README, AGENTS/CLAUDE guides, CONTRIBUTING, CI
 
