@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { freeSpacePosition } from "@/lib/cards/grid";
 import { createCard, type Square } from "@/lib/firestore/cards";
-import type { PositionedSquareDraft } from "./positions";
-import type { CardSettings } from "./types";
+import type { PositionedSquareDraft } from "../_builder/positions";
+import type { CardSettings } from "../_builder/types";
 
 export type SaveCardResult = { ok: true } | { ok: false; error: string };
 

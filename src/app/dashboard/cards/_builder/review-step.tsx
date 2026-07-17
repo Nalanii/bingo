@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { freeSpacePosition } from "@/lib/cards/grid";
-import { saveCard } from "./actions";
+import { saveCard } from "../new/actions";
 import type { PositionedSquareDraft } from "./positions";
 import type { CardSettings } from "./types";
 

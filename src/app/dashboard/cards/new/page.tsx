@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
-import { CardBuilder } from "./card-builder";
+import { CardBuilder } from "../_builder/card-builder";
 
 export default async function NewCardPage() {
   const user = await getUser();
