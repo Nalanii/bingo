@@ -8,9 +8,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { freeSpacePosition } from "@/lib/cards/grid";
 import { saveCard } from "./actions";
 import type { PositionedSquareDraft } from "./positions";
 import type { CardSettings } from "./types";
+
+type ReviewSquare =
+  | (PositionedSquareDraft & { isFreeSpace?: false })
+  | { position: number; label: string; isFreeSpace: true };
 
 export function ReviewStep({
   settings,
@@ -24,9 +29,20 @@ export function ReviewStep({
   const [isPending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
 
+  const allSquares: ReviewSquare[] = settings.hasFreeSpace
+    ? [
+        ...squares,
+        {
+          position: freeSpacePosition(settings.gridSize),
+          label: "Free space",
+          isFreeSpace: true,
+        },
+      ]
+    : squares;
+
   // Sorted by position so RANDOM cards show their shuffled grid order, not
   // entry order.
-  const orderedSquares = [...squares].sort((a, b) => a.position - b.position);
+  const orderedSquares = allSquares.sort((a, b) => a.position - b.position);
 
   const handleSave = () => {
     setError(null);
@@ -54,9 +70,11 @@ export function ReviewStep({
           {orderedSquares.map((square) => (
             <li key={square.position}>
               Slot {square.position + 1}: {square.label} ·{" "}
-              {square.kind === "COUNTER"
-                ? `counter to ${square.goal}`
-                : "check"}
+              {square.isFreeSpace
+                ? "pre-complete"
+                : square.kind === "COUNTER"
+                  ? `counter to ${square.goal}`
+                  : "check"}
             </li>
           ))}
         </ul>
