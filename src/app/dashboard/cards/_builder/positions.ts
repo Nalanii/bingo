@@ -52,6 +52,11 @@ export function attachExistingPositions(
   squares: SquareDraft[],
   initialSquares: PositionedSquareDraft[],
 ): PositionedSquareDraft[] {
+  if (squares.length !== initialSquares.length) {
+    throw new Error(
+      "attachExistingPositions: squares and initialSquares must be the same length",
+    );
+  }
   return squares.map((square, index) => ({
     ...square,
     position: initialSquares[index].position,
