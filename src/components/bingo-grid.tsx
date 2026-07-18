@@ -20,10 +20,10 @@ interface BingoGridProps {
   initialLatestCompletionDates: Record<string, string>;
 }
 
-/** Formats an ISO 8601 timestamp as a short local date, e.g. "Jan 1, 2026". */
+/** Formats an ISO 8601 timestamp as a local date with a full month name, e.g. "January 1, 2026". */
 function formatCompletionDate(completedAt: string): string {
   return new Date(completedAt).toLocaleDateString("en-US", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });
@@ -258,16 +258,17 @@ function BingoSquareCell({
     );
   }
 
-  const historyDateButton = (text: string) => (
+  const historyDateButton = (label: string, date: string) => (
     <button
       type="button"
-      className="text-[0.55rem] italic opacity-80 underline-offset-2 hover:underline sm:text-[0.6rem]"
+      className="flex flex-col text-[0.55rem] leading-tight italic opacity-80 hover:underline sm:text-[0.6rem]"
       onClick={(event) => {
         event.stopPropagation();
         onViewHistory(square);
       }}
     >
-      {text}
+      <span>{label}</span>
+      <span>{date}</span>
     </button>
   );
 
@@ -302,7 +303,7 @@ function BingoSquareCell({
         </div>
         {count > 0 &&
           latestCompletionDate &&
-          historyDateButton(`Last completed: ${formatCompletionDate(latestCompletionDate)}`)}
+          historyDateButton("Last completed:", formatCompletionDate(latestCompletionDate))}
       </div>
     );
   }
@@ -331,7 +332,7 @@ function BingoSquareCell({
       </button>
       {completed &&
         latestCompletionDate &&
-        historyDateButton(`Completed: ${formatCompletionDate(latestCompletionDate)}`)}
+        historyDateButton("Completed:", formatCompletionDate(latestCompletionDate))}
     </div>
   );
 }
