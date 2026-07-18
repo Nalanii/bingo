@@ -61,3 +61,42 @@ export async function removeLatestCompletion(cardId: string, squareId: string): 
 
   return Math.max(sorted.length - 1, 0);
 }
+
+/** Reads all completion docs for a single square, sorted by completedAt descending (most recent first). */
+export async function getCompletionsForSquare(
+  cardId: string,
+  squareId: string,
+): Promise<Completion[]> {
+  const completions = db.collection("cards").doc(cardId).collection("completions");
+  // Sorted in memory (rather than via `.orderBy`) so this doesn't need a
+  // composite Firestore index; a square's completion count is small.
+  const existing = await completions.where("squareId", "==", squareId).get();
+  const sorted = existing.docs.sort(
+    (a, b) =>
+      (b.data().completedAt as Timestamp).toMillis() -
+      (a.data().completedAt as Timestamp).toMillis(),
+  );
+
+  return sorted.map((doc) => {
+    const data = doc.data() as { squareId: string; completedAt: Timestamp };
+    return {
+      id: doc.id,
+      squareId: data.squareId,
+      completedAt: data.completedAt.toDate(),
+    };
+  });
+}
+
+/** Updates the completedAt date of a single completion doc. */
+export async function updateCompletionDate(
+  cardId: string,
+  completionId: string,
+  completedAt: Date,
+): Promise<void> {
+  await db
+    .collection("cards")
+    .doc(cardId)
+    .collection("completions")
+    .doc(completionId)
+    .update({ completedAt });
+}
