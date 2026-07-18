@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import {
+  deleteCard as deleteCardDoc,
   getCard,
   updateCard as updateCardDoc,
   type Square,
@@ -99,6 +100,28 @@ export async function updateCard(
   } catch (error) {
     console.error("updateCard: failed to update card", error);
     return { ok: false, error: "Something went wrong saving your card. Try again." };
+  }
+
+  redirect("/dashboard");
+}
+
+/** Deletes a card the current user owns. */
+export async function deleteCard(cardId: string): Promise<SaveCardResult> {
+  const user = await getUser();
+  if (!user) {
+    return { ok: false, error: "You need to sign in to delete a card." };
+  }
+
+  const card = await getCard(cardId);
+  if (!card || card.ownerId !== user.uid) {
+    return { ok: false, error: "Card not found." };
+  }
+
+  try {
+    await deleteCardDoc(cardId);
+  } catch (error) {
+    console.error("deleteCard: failed to delete card", error);
+    return { ok: false, error: "Something went wrong deleting your card. Try again." };
   }
 
   redirect("/dashboard");
