@@ -103,6 +103,11 @@ export async function updateCard(
   });
 }
 
+/** Deletes a card doc. Squares are embedded on the doc, so no cleanup elsewhere is needed. */
+export async function deleteCard(cardId: string): Promise<void> {
+  await db.collection("cards").doc(cardId).delete();
+}
+
 /** Lists a user's cards, newest-updated first, with each card's square count. */
 export async function listCardsByOwner(ownerId: string): Promise<CardSummary[]> {
   // Requires a Firestore composite index on cards (ownerId ASC, updatedAt DESC); see firestore.indexes.json.

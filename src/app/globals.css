@@ -22,6 +22,8 @@
   --accent-foreground: #211e2e;
   --success: #2ec4b6; /* teal */
   --success-foreground: #06312c;
+  --destructive: #e5384f; /* alert red */
+  --destructive-foreground: #ffffff;
 
   --radius: 1rem;
 }
@@ -44,6 +46,8 @@
     --accent-foreground: #211e2e;
     --success: #4fd6c9;
     --success-foreground: #06312c;
+    --destructive: #ff5c72;
+    --destructive-foreground: #2a0714;
   }
 }
 
@@ -64,6 +68,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
 
   --font-sans: var(--font-body);
   --font-display: var(--font-display);

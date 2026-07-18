@@ -5,7 +5,8 @@ import { getCard } from "@/lib/firestore/cards";
 import { CardBuilder } from "../../_builder/card-builder";
 import type { PositionedSquareDraft } from "../../_builder/positions";
 import type { CardSettings } from "../../_builder/types";
-import { updateCard } from "./actions";
+import { deleteCard, updateCard } from "./actions";
+import { DeleteCardButton } from "./delete-card-button";
 
 export default async function EditCardPage({
   params,
@@ -49,6 +50,7 @@ export default async function EditCardPage({
         initialSquares={initialSquares}
         onSave={updateCard.bind(null, card.id)}
       />
+      <DeleteCardButton onDelete={deleteCard.bind(null, card.id)} />
     </div>
   );
 }
