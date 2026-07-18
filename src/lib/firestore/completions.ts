@@ -34,3 +34,30 @@ export async function toggleCompletion(cardId: string, squareId: string): Promis
   await completions.add({ squareId, completedAt: new Date() });
   return true;
 }
+
+/** Logs a new completion for a counter square. Returns the resulting completion count. */
+export async function addCompletion(cardId: string, squareId: string): Promise<number> {
+  const completions = db.collection("cards").doc(cardId).collection("completions");
+  await completions.add({ squareId, completedAt: new Date() });
+  const count = await completions.where("squareId", "==", squareId).count().get();
+  return count.data().count;
+}
+
+/** Removes the most recent completion for a counter square. Returns the resulting completion count. */
+export async function removeLatestCompletion(cardId: string, squareId: string): Promise<number> {
+  const completions = db.collection("cards").doc(cardId).collection("completions");
+  // Sorted in memory (rather than via `.orderBy`) so this doesn't need a
+  // composite Firestore index; a square's completion count is small.
+  const existing = await completions.where("squareId", "==", squareId).get();
+  const sorted = existing.docs.sort(
+    (a, b) =>
+      (b.data().completedAt as Timestamp).toMillis() -
+      (a.data().completedAt as Timestamp).toMillis(),
+  );
+
+  if (sorted.length > 0) {
+    await sorted[0].ref.delete();
+  }
+
+  return Math.max(sorted.length - 1, 0);
+}

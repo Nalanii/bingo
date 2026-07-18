@@ -20,7 +20,16 @@ export default async function PlayCardPage({
   if (!card || card.ownerId !== user.uid) notFound();
 
   const completions = await getCompletions(id);
-  const completedSquareIds = completions.map((completion) => completion.squareId);
+  const checkSquareIds = new Set(
+    card.squares.filter((square) => square.kind === "CHECK").map((square) => square.id),
+  );
+  const completedSquareIds = completions
+    .filter((completion) => checkSquareIds.has(completion.squareId))
+    .map((completion) => completion.squareId);
+  const initialCounts = completions.reduce<Record<string, number>>((counts, completion) => {
+    counts[completion.squareId] = (counts[completion.squareId] ?? 0) + 1;
+    return counts;
+  }, {});
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
@@ -33,6 +42,7 @@ export default async function PlayCardPage({
         gridSize={card.gridSize}
         squares={card.squares}
         initialCompletedSquareIds={completedSquareIds}
+        initialCounts={initialCounts}
       />
     </div>
   );
