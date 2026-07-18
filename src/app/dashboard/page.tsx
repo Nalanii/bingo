@@ -41,14 +41,20 @@ export default async function DashboardPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((card) => (
-            <Card key={card.id}>
-              <CardContent className="flex flex-col gap-2 py-6">
-                <CardTitle>{card.name}</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {card.gridSize}×{card.gridSize} · {card.squareCount} squares
-                </p>
-              </CardContent>
-            </Card>
+            <Link
+              key={card.id}
+              href={`/dashboard/cards/${card.id}/edit`}
+              className="block"
+            >
+              <Card>
+                <CardContent className="flex flex-col gap-2 py-6">
+                  <CardTitle>{card.name}</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {card.gridSize}×{card.gridSize} · {card.squareCount} squares
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}
