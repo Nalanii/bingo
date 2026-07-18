@@ -44,9 +44,7 @@ function BingoSquareCell({ square }: { square: Square | undefined }) {
         "flex aspect-square flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[var(--radius-sm)] border-2 p-1 text-center sm:gap-1 sm:p-2",
         isFreeSpace
           ? "border-accent bg-accent text-accent-foreground"
-          : kind === "COUNTER"
-            ? "border-secondary bg-card text-card-foreground"
-            : "border-border bg-card text-card-foreground",
+          : "border-border bg-card text-card-foreground",
       )}
     >
       {isFreeSpace ? (
