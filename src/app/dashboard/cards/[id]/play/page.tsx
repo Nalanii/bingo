@@ -30,6 +30,16 @@ export default async function PlayCardPage({
     counts[completion.squareId] = (counts[completion.squareId] ?? 0) + 1;
     return counts;
   }, {});
+  const initialLatestCompletionDates = completions.reduce<Record<string, string>>(
+    (latest, completion) => {
+      const existing = latest[completion.squareId];
+      if (!existing || completion.completedAt > new Date(existing)) {
+        latest[completion.squareId] = completion.completedAt.toISOString();
+      }
+      return latest;
+    },
+    {},
+  );
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
@@ -43,6 +53,7 @@ export default async function PlayCardPage({
         squares={card.squares}
         initialCompletedSquareIds={completedSquareIds}
         initialCounts={initialCounts}
+        initialLatestCompletionDates={initialLatestCompletionDates}
       />
     </div>
   );

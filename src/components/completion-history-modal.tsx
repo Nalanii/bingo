@@ -12,6 +12,8 @@ interface CompletionHistoryModalProps {
   cardId: string;
   square: Square;
   onClose: () => void;
+  /** Called whenever this square's completion entries are freshly fetched (initial load and after a save), so callers can keep their own "latest completion" state in sync. */
+  onEntriesChange?: (entries: CompletionHistoryEntry[]) => void;
 }
 
 /** Converts an ISO 8601 timestamp to a `YYYY-MM-DD` value using local calendar date components. */
@@ -33,7 +35,12 @@ function dateInputValueToIso(value: string): string {
  * Modal dialog listing a square's completion history, with an editable date
  * per entry. Owns its own fetch/loading/error/save state.
  */
-export function CompletionHistoryModal({ cardId, square, onClose }: CompletionHistoryModalProps) {
+export function CompletionHistoryModal({
+  cardId,
+  square,
+  onClose,
+  onEntriesChange,
+}: CompletionHistoryModalProps) {
   const [entries, setEntries] = useState<CompletionHistoryEntry[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -114,6 +121,7 @@ export function CompletionHistoryModal({ cardId, square, onClose }: CompletionHi
           refreshed.entries.map((e) => [e.id, isoToDateInputValue(e.completedAt)]),
         ),
       );
+      onEntriesChange?.(refreshed.entries);
     } finally {
       setSavingIds((prev) => {
         const next = new Set(prev);
