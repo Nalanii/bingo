@@ -115,13 +115,8 @@ export function CompletionHistoryModal({
         return;
       }
 
-      setEntries(refreshed.entries);
-      setDraftValues(
-        Object.fromEntries(
-          refreshed.entries.map((e) => [e.id, isoToDateInputValue(e.completedAt)]),
-        ),
-      );
       onEntriesChange?.(refreshed.entries);
+      onClose();
     } finally {
       setSavingIds((prev) => {
         const next = new Set(prev);
@@ -187,6 +182,12 @@ export function CompletionHistoryModal({
                         onChange={(event) =>
                           setDraftValues((prev) => ({ ...prev, [entry.id]: event.target.value }))
                         }
+                        onKeyDown={(event) => {
+                          if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+                            event.preventDefault();
+                            handleSave(entry);
+                          }
+                        }}
                         disabled={isSaving}
                       />
                       <button
