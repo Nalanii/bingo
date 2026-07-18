@@ -41,20 +41,30 @@ export default async function DashboardPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((card) => (
-            <Link
-              key={card.id}
-              href={`/dashboard/cards/${card.id}/edit`}
-              className="block rounded-[var(--radius-lg)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-              <Card>
-                <CardContent className="flex flex-col gap-2 py-6">
+            <Card key={card.id}>
+              <CardContent className="flex flex-col gap-4 py-6">
+                <div className="flex flex-col gap-2">
                   <CardTitle>{card.name}</CardTitle>
                   <p className="text-sm text-muted-foreground">
                     {card.gridSize}×{card.gridSize} · {card.squareCount} squares
                   </p>
-                </CardContent>
-              </Card>
-            </Link>
+                </div>
+                <div className="flex gap-2">
+                  <Link
+                    href={`/dashboard/cards/${card.id}/play`}
+                    className={buttonVariants({ variant: "primary", size: "sm", className: "flex-1" })}
+                  >
+                    Play
+                  </Link>
+                  <Link
+                    href={`/dashboard/cards/${card.id}/edit`}
+                    className={buttonVariants({ variant: "outline", size: "sm", className: "flex-1" })}
+                  >
+                    Edit
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
