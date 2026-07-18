@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import type { Square } from "@/lib/firestore/cards";
 import {
   decrementSquareProgress,
+  getSquareCompletionHistory,
   incrementSquareProgress,
   toggleSquareCompletion,
 } from "@/app/dashboard/cards/[id]/play/actions";
@@ -16,6 +17,16 @@ interface BingoGridProps {
   squares: Square[];
   initialCompletedSquareIds: string[];
   initialCounts: Record<string, number>;
+  initialLatestCompletionDates: Record<string, string>;
+}
+
+/** Formats an ISO 8601 timestamp as a short local date, e.g. "Jan 1, 2026". */
+function formatCompletionDate(completedAt: string): string {
+  return new Date(completedAt).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 /**
@@ -29,14 +40,34 @@ export function BingoGrid({
   squares,
   initialCompletedSquareIds,
   initialCounts,
+  initialLatestCompletionDates,
 }: BingoGridProps) {
   const [completedSquareIds, setCompletedSquareIds] = useState(
     () => new Set(initialCompletedSquareIds),
   );
   const [counts, setCounts] = useState<Record<string, number>>(() => ({ ...initialCounts }));
+  const [latestCompletionDates, setLatestCompletionDates] = useState<Record<string, string>>(
+    () => ({ ...initialLatestCompletionDates }),
+  );
   const [pendingSquareIds, setPendingSquareIds] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
   const [historySquare, setHistorySquare] = useState<Square | null>(null);
+
+  /** Refetches a square's completion history and updates its displayed latest date. */
+  async function refreshLatestCompletionDate(squareId: string) {
+    const result = await getSquareCompletionHistory(cardId, squareId);
+    if (!result.ok) return;
+
+    setLatestCompletionDates((prev) => {
+      const next = { ...prev };
+      if (result.entries.length > 0) {
+        next[squareId] = result.entries[0].completedAt;
+      } else {
+        delete next[squareId];
+      }
+      return next;
+    });
+  }
 
   const squaresByPosition = new Map(squares.map((square) => [square.position, square]));
   const slotCount = gridSize * gridSize;
@@ -81,6 +112,7 @@ export function BingoGrid({
           }
           return next;
         });
+        await refreshLatestCompletionDate(square.id);
       }
     } finally {
       setPendingSquareIds((prev) => {
@@ -113,6 +145,7 @@ export function BingoGrid({
         setError(result.error);
       } else {
         setCounts((prev) => ({ ...prev, [square.id]: result.count }));
+        await refreshLatestCompletionDate(square.id);
       }
     } finally {
       setPendingSquareIds((prev) => {
@@ -135,6 +168,7 @@ export function BingoGrid({
             square={square}
             completed={square ? completedSquareIds.has(square.id) : false}
             count={square ? (counts[square.id] ?? 0) : 0}
+            latestCompletionDate={square ? latestCompletionDates[square.id] : undefined}
             pending={square ? pendingSquareIds.has(square.id) : false}
             onToggle={handleToggle}
             onProgressChange={handleProgressChange}
@@ -152,6 +186,17 @@ export function BingoGrid({
           cardId={cardId}
           square={historySquare}
           onClose={() => setHistorySquare(null)}
+          onEntriesChange={(entries) => {
+            setLatestCompletionDates((prev) => {
+              const next = { ...prev };
+              if (entries.length > 0) {
+                next[historySquare.id] = entries[0].completedAt;
+              } else {
+                delete next[historySquare.id];
+              }
+              return next;
+            });
+          }}
         />
       )}
     </div>
@@ -162,6 +207,7 @@ function BingoSquareCell({
   square,
   completed,
   count,
+  latestCompletionDate,
   pending,
   onToggle,
   onProgressChange,
@@ -170,6 +216,7 @@ function BingoSquareCell({
   square: Square | undefined;
   completed: boolean;
   count: number;
+  latestCompletionDate: string | undefined;
   pending: boolean;
   onToggle: (square: Square) => void;
   onProgressChange: (square: Square, direction: "increment" | "decrement") => void;
@@ -211,24 +258,22 @@ function BingoSquareCell({
     );
   }
 
-  const historyButton = (
+  const historyDateButton = (text: string) => (
     <button
       type="button"
-      className="border-border bg-card text-card-foreground absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full border text-[0.55rem] leading-none sm:h-5 sm:w-5 sm:text-xs"
-      aria-label={`View completion history for ${label}`}
+      className="text-[0.55rem] italic opacity-80 underline-offset-2 hover:underline sm:text-[0.6rem]"
       onClick={(event) => {
         event.stopPropagation();
         onViewHistory(square);
       }}
     >
-      🕓
+      {text}
     </button>
   );
 
   if (isCounter) {
     return (
-      <div className={cn(sharedClassName, "relative")}>
-        {historyButton}
+      <div className={sharedClassName}>
         <span className="line-clamp-2 text-[0.6rem] leading-tight font-medium break-words sm:text-xs">
           {label}
         </span>
@@ -255,6 +300,9 @@ function BingoSquareCell({
             +
           </button>
         </div>
+        {count > 0 &&
+          latestCompletionDate &&
+          historyDateButton(`Last completed: ${formatCompletionDate(latestCompletionDate)}`)}
       </div>
     );
   }
@@ -270,11 +318,10 @@ function BingoSquareCell({
   }
 
   return (
-    <div className="relative">
-      {historyButton}
+    <div className={sharedClassName}>
       <button
         type="button"
-        className={cn(sharedClassName, "w-full disabled:cursor-wait disabled:opacity-70")}
+        className="flex w-full flex-1 flex-col items-center justify-center gap-0.5 disabled:cursor-wait disabled:opacity-70"
         aria-pressed={completed}
         aria-label={`${label} — ${completed ? "completed" : "not completed"}, tap to toggle`}
         disabled={pending}
@@ -282,6 +329,9 @@ function BingoSquareCell({
       >
         {content}
       </button>
+      {completed &&
+        latestCompletionDate &&
+        historyDateButton(`Completed: ${formatCompletionDate(latestCompletionDate)}`)}
     </div>
   );
 }
