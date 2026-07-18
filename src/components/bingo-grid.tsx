@@ -8,6 +8,7 @@ import {
   incrementSquareProgress,
   toggleSquareCompletion,
 } from "@/app/dashboard/cards/[id]/play/actions";
+import { CompletionHistoryModal } from "@/components/completion-history-modal";
 
 interface BingoGridProps {
   cardId: string;
@@ -35,6 +36,7 @@ export function BingoGrid({
   const [counts, setCounts] = useState<Record<string, number>>(() => ({ ...initialCounts }));
   const [pendingSquareIds, setPendingSquareIds] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
+  const [historySquare, setHistorySquare] = useState<Square | null>(null);
 
   const squaresByPosition = new Map(squares.map((square) => [square.position, square]));
   const slotCount = gridSize * gridSize;
@@ -136,6 +138,7 @@ export function BingoGrid({
             pending={square ? pendingSquareIds.has(square.id) : false}
             onToggle={handleToggle}
             onProgressChange={handleProgressChange}
+            onViewHistory={setHistorySquare}
           />
         ))}
       </div>
@@ -143,6 +146,13 @@ export function BingoGrid({
         <p role="alert" className="text-destructive text-center text-sm">
           {error}
         </p>
+      )}
+      {historySquare && (
+        <CompletionHistoryModal
+          cardId={cardId}
+          square={historySquare}
+          onClose={() => setHistorySquare(null)}
+        />
       )}
     </div>
   );
@@ -155,6 +165,7 @@ function BingoSquareCell({
   pending,
   onToggle,
   onProgressChange,
+  onViewHistory,
 }: {
   square: Square | undefined;
   completed: boolean;
@@ -162,6 +173,7 @@ function BingoSquareCell({
   pending: boolean;
   onToggle: (square: Square) => void;
   onProgressChange: (square: Square, direction: "increment" | "decrement") => void;
+  onViewHistory: (square: Square) => void;
 }) {
   if (!square) {
     // Defensive: a slot without a matching square (shouldn't happen per the
@@ -199,9 +211,24 @@ function BingoSquareCell({
     );
   }
 
+  const historyButton = (
+    <button
+      type="button"
+      className="border-border bg-card text-card-foreground absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full border text-[0.55rem] leading-none sm:h-5 sm:w-5 sm:text-xs"
+      aria-label={`View completion history for ${label}`}
+      onClick={(event) => {
+        event.stopPropagation();
+        onViewHistory(square);
+      }}
+    >
+      🕓
+    </button>
+  );
+
   if (isCounter) {
     return (
-      <div className={sharedClassName}>
+      <div className={cn(sharedClassName, "relative")}>
+        {historyButton}
         <span className="line-clamp-2 text-[0.6rem] leading-tight font-medium break-words sm:text-xs">
           {label}
         </span>
@@ -243,15 +270,18 @@ function BingoSquareCell({
   }
 
   return (
-    <button
-      type="button"
-      className={cn(sharedClassName, "disabled:cursor-wait disabled:opacity-70")}
-      aria-pressed={completed}
-      aria-label={`${label} — ${completed ? "completed" : "not completed"}, tap to toggle`}
-      disabled={pending}
-      onClick={() => onToggle(square)}
-    >
-      {content}
-    </button>
+    <div className="relative">
+      {historyButton}
+      <button
+        type="button"
+        className={cn(sharedClassName, "w-full disabled:cursor-wait disabled:opacity-70")}
+        aria-pressed={completed}
+        aria-label={`${label} — ${completed ? "completed" : "not completed"}, tap to toggle`}
+        disabled={pending}
+        onClick={() => onToggle(square)}
+      >
+        {content}
+      </button>
+    </div>
   );
 }
