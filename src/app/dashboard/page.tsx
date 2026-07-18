@@ -52,12 +52,14 @@ export default async function DashboardPage() {
                 <div className="flex gap-2">
                   <Link
                     href={`/dashboard/cards/${card.id}/play`}
+                    aria-label={`Play ${card.name}`}
                     className={buttonVariants({ variant: "primary", size: "sm", className: "flex-1" })}
                   >
                     Play
                   </Link>
                   <Link
                     href={`/dashboard/cards/${card.id}/edit`}
+                    aria-label={`Edit ${card.name}`}
                     className={buttonVariants({ variant: "outline", size: "sm", className: "flex-1" })}
                   >
                     Edit
