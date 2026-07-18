@@ -44,7 +44,7 @@ export default async function DashboardPage() {
             <Link
               key={card.id}
               href={`/dashboard/cards/${card.id}/edit`}
-              className="block"
+              className="block rounded-[var(--radius-lg)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <Card>
                 <CardContent className="flex flex-col gap-2 py-6">
