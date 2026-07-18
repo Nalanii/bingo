@@ -56,6 +56,9 @@ export async function saveCard(
     }
     seenPositions.add(square.position);
 
+    if (square.kind !== "CHECK" && square.kind !== "COUNTER") {
+      return { ok: false, error: "Invalid square type." };
+    }
     if (square.kind === "CHECK" && square.goal !== 1) {
       return { ok: false, error: "Check squares must have a goal of 1." };
     }
