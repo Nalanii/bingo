@@ -62,9 +62,9 @@ export default async function DashboardPage() {
                 <CardContent className="flex flex-col gap-4 py-6">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between gap-2">
-                      <CardTitle>{card.name}</CardTitle>
+                      <CardTitle className="min-w-0 truncate">{card.name}</CardTitle>
                       {progress.hasBingo && (
-                        <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground">
+                        <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground">
                           BINGO!
                         </span>
                       )}
