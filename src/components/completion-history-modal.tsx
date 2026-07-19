@@ -33,7 +33,8 @@ function dateInputValueToIso(value: string): string {
 
 /**
  * Modal dialog listing a square's completion history, with an editable date
- * per entry. Owns its own fetch/loading/error/save state.
+ * per entry and a single Save button that commits every changed entry at
+ * once. Owns its own fetch/loading/error/save state.
  */
 export function CompletionHistoryModal({
   cardId,
@@ -45,7 +46,8 @@ export function CompletionHistoryModal({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [draftValues, setDraftValues] = useState<Record<string, string>>({});
-  const [savingIds, setSavingIds] = useState<Set<string>>(() => new Set());
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -90,39 +92,52 @@ export function CompletionHistoryModal({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  async function handleSave(entry: CompletionHistoryEntry) {
-    const value = draftValues[entry.id];
-    if (!value || savingIds.has(entry.id)) return;
+  function isDirty(entry: CompletionHistoryEntry): boolean {
+    const draftValue = draftValues[entry.id];
+    return draftValue !== undefined && draftValue !== isoToDateInputValue(entry.completedAt);
+  }
 
-    setSavingIds((prev) => new Set(prev).add(entry.id));
-    setRowErrors((prev) => {
-      const next = { ...prev };
-      delete next[entry.id];
-      return next;
-    });
+  const dirtyEntries = (entries ?? []).filter(isDirty);
+
+  async function handleSaveAll() {
+    if (saving || dirtyEntries.length === 0) return;
+
+    setSaving(true);
+    setSaveError(null);
+    setRowErrors({});
 
     try {
-      const isoValue = dateInputValueToIso(value);
-      const result = await updateSquareCompletionDate(cardId, square.id, entry.id, isoValue);
-      if (!result.ok) {
-        setRowErrors((prev) => ({ ...prev, [entry.id]: result.error }));
+      const outcomes = await Promise.all(
+        dirtyEntries.map(async (entry) => {
+          const isoValue = dateInputValueToIso(draftValues[entry.id]);
+          const result = await updateSquareCompletionDate(cardId, square.id, entry.id, isoValue);
+          return { entry, result };
+        }),
+      );
+
+      const failures = outcomes.filter(({ result }) => !result.ok);
+      if (failures.length > 0) {
+        setRowErrors(
+          Object.fromEntries(
+            failures.map(({ entry, result }) => [
+              entry.id,
+              result.ok ? "" : result.error,
+            ]),
+          ),
+        );
         return;
       }
 
       const refreshed = await getSquareCompletionHistory(cardId, square.id);
       if (!refreshed.ok) {
-        setRowErrors((prev) => ({ ...prev, [entry.id]: refreshed.error }));
+        setSaveError(refreshed.error);
         return;
       }
 
       onEntriesChange?.(refreshed.entries);
       onClose();
     } finally {
-      setSavingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(entry.id);
-        return next;
-      });
+      setSaving(false);
     }
   }
 
@@ -167,38 +182,25 @@ export function CompletionHistoryModal({
             <ul className="flex flex-col gap-2">
               {entries.map((entry) => {
                 const draftValue = draftValues[entry.id] ?? isoToDateInputValue(entry.completedAt);
-                const savedValue = isoToDateInputValue(entry.completedAt);
-                const isSaving = savingIds.has(entry.id);
-                const isDirty = draftValue !== savedValue;
                 const rowError = rowErrors[entry.id];
 
                 return (
                   <li key={entry.id} className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="date"
-                        className="border-border bg-card text-card-foreground flex-1 rounded-[var(--radius-sm)] border px-2 py-1 text-sm"
-                        value={draftValue}
-                        onChange={(event) =>
-                          setDraftValues((prev) => ({ ...prev, [entry.id]: event.target.value }))
+                    <input
+                      type="date"
+                      className="border-border bg-card text-card-foreground w-full rounded-[var(--radius-sm)] border px-2 py-1 text-sm"
+                      value={draftValue}
+                      onChange={(event) =>
+                        setDraftValues((prev) => ({ ...prev, [entry.id]: event.target.value }))
+                      }
+                      onKeyDown={(event) => {
+                        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+                          event.preventDefault();
+                          handleSaveAll();
                         }
-                        onKeyDown={(event) => {
-                          if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-                            event.preventDefault();
-                            handleSave(entry);
-                          }
-                        }}
-                        disabled={isSaving}
-                      />
-                      <button
-                        type="button"
-                        className="border-border bg-card text-card-foreground rounded-[var(--radius-sm)] border px-2 py-1 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-40"
-                        disabled={!isDirty || isSaving}
-                        onClick={() => handleSave(entry)}
-                      >
-                        {isSaving ? "Saving…" : "Save"}
-                      </button>
-                    </div>
+                      }}
+                      disabled={saving}
+                    />
                     {rowError && (
                       <p role="alert" className="text-destructive text-xs">
                         {rowError}
@@ -210,6 +212,24 @@ export function CompletionHistoryModal({
             </ul>
           )}
         </div>
+
+        {!loading && !loadError && entries && entries.length > 0 && (
+          <div className="flex flex-col items-end gap-1">
+            {saveError && (
+              <p role="alert" className="text-destructive text-xs">
+                {saveError}
+              </p>
+            )}
+            <button
+              type="button"
+              className="border-border bg-card text-card-foreground rounded-[var(--radius-sm)] border px-3 py-1 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={dirtyEntries.length === 0 || saving}
+              onClick={handleSaveAll}
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
