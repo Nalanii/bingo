@@ -288,7 +288,7 @@ function BingoSquareCell({
   const isPartial = isCounter && count > 0 && !goalReached;
 
   const sharedClassName = cn(
-    "flex aspect-square flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[var(--radius-sm)] border-2 p-1 text-center sm:gap-1 sm:p-2",
+    "group relative flex aspect-square flex-col items-center justify-center gap-0.5 rounded-[var(--radius-sm)] border-2 p-1 text-center sm:gap-1 sm:p-2",
     isFreeSpace
       ? "border-accent bg-accent text-accent-foreground"
       : completed || goalReached
@@ -309,6 +309,22 @@ function BingoSquareCell({
     );
   }
 
+  const renderLabel = (clampClass: string, textSizeClass: string) => (
+    <div className="relative w-full">
+      <span
+        className={cn(clampClass, textSizeClass, "leading-tight font-medium break-words")}
+      >
+        {label}
+      </span>
+      <span
+        aria-hidden="true"
+        className="border-border bg-card text-card-foreground pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-max max-w-[9rem] -translate-x-1/2 scale-95 rounded-[var(--radius-sm)] border px-2 py-1 text-center text-[0.65rem] leading-snug font-medium opacity-0 shadow-lg transition-all duration-150 group-hover:scale-100 group-hover:opacity-100 sm:text-xs"
+      >
+        {label}
+      </span>
+    </div>
+  );
+
   const historyDateButton = (label: string, date: string) => (
     <button
       type="button"
@@ -326,9 +342,7 @@ function BingoSquareCell({
   if (isCounter) {
     return (
       <div className={sharedClassName}>
-        <span className="line-clamp-2 text-[0.6rem] leading-tight font-medium break-words sm:text-xs">
-          {label}
-        </span>
+        {renderLabel("line-clamp-3", "text-[0.6rem] sm:text-xs")}
         <div className="flex items-center gap-1.5">
           <button
             type="button"
@@ -359,11 +373,7 @@ function BingoSquareCell({
     );
   }
 
-  const content = (
-    <span className="line-clamp-3 text-[0.65rem] leading-tight font-medium break-words sm:text-xs">
-      {label}
-    </span>
-  );
+  const content = renderLabel("line-clamp-4", "text-[0.65rem] sm:text-xs");
 
   if (!isCheckInteractive) {
     return <div className={sharedClassName}>{content}</div>;
