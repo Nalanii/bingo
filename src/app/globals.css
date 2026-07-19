@@ -96,6 +96,18 @@ body {
   }
 }
 
+/* Confetti pieces fall, spin, and fade out — used by BingoCelebration. */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-10%) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(320%) rotate(540deg);
+    opacity: 0;
+  }
+}
+
 .font-display {
   font-family: var(--font-display), var(--font-body), sans-serif;
 }
