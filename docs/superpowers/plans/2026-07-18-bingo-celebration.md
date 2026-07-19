@@ -277,11 +277,17 @@ Navigate to `/dashboard/cards/[id]/play` for a card with an incomplete row. Tap 
 
 Expected: confetti pieces fall from the top of the screen and a "BINGO!" badge pops in and wobbles, then everything clears after ~1.5s.
 
-- [ ] **Step 3: Verify it doesn't re-fire for an already-completed line**
+- [ ] **Step 3: Verify it doesn't spuriously fire for unrelated toggles**
 
-Toggle a square that's part of an already-completed line off and back on (without completing any new line).
+Toggle a square that isn't part of any completed line and doesn't complete any line on its own (e.g. an isolated square with no adjacent completions in its row/column/diagonal).
 
-Expected: no celebration fires, since that line's key was already in the previously-seen set before and after (once re-completed).
+Expected: no celebration fires, since no new line key appears.
+
+- [ ] **Step 3b: Confirm re-completing a broken line re-fires (expected, not a bug)**
+
+Toggle a square that's part of an already-completed line off (breaking the line), then back on (re-completing it).
+
+Expected: the celebration fires again on re-completion. Per the design spec, undoing a line removes it from the tracked "previously seen" set with no celebration on the undo itself — so re-completing it afterward is treated as a newly completed line and celebrates again. This is intentional: the tracked set reflects current completion state, not all-time history.
 
 - [ ] **Step 4: Verify a second, different line triggers a second celebration**
 
