@@ -318,7 +318,7 @@ function BingoSquareCell({
       </span>
       <span
         aria-hidden="true"
-        className="border-border bg-card text-card-foreground pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-max max-w-[9rem] -translate-x-1/2 scale-95 rounded-[var(--radius-sm)] border px-2 py-1 text-center text-[0.65rem] leading-snug font-medium opacity-0 shadow-lg transition-all duration-150 group-hover:scale-100 group-hover:opacity-100 sm:text-xs"
+        className="border-border bg-card text-card-foreground pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-max max-w-[9rem] -translate-x-1/2 scale-95 rounded-[var(--radius-sm)] border px-2 py-1 text-center text-[0.65rem] leading-snug font-medium opacity-0 shadow-lg transition-all duration-150 group-hover:scale-100 group-hover:opacity-100 group-hover:delay-[700ms] sm:text-xs"
       >
         {label}
       </span>
