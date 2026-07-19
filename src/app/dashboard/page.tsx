@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { listCardsByOwner } from "@/lib/firestore/cards";
+import { getCompletions } from "@/lib/firestore/completions";
+import { computeCardProgress } from "@/lib/cards/progress";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 
@@ -13,6 +15,14 @@ export default async function DashboardPage() {
   if (!user) redirect("/");
 
   const cards = await listCardsByOwner(user.uid);
+  const progressByCardId = Object.fromEntries(
+    await Promise.all(
+      cards.map(async (card) => {
+        const completions = await getCompletions(card.id);
+        return [card.id, computeCardProgress(card.gridSize, card.squares, completions)] as const;
+      }),
+    ),
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -40,34 +50,68 @@ export default async function DashboardPage() {
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {cards.map((card) => (
-            <Card key={card.id}>
-              <CardContent className="flex flex-col gap-4 py-6">
-                <div className="flex flex-col gap-2">
-                  <CardTitle>{card.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {card.gridSize}×{card.gridSize} · {card.squareCount} squares
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Link
-                    href={`/dashboard/cards/${card.id}/play`}
-                    aria-label={`Play ${card.name}`}
-                    className={buttonVariants({ variant: "primary", size: "sm", className: "flex-1" })}
-                  >
-                    Play
-                  </Link>
-                  <Link
-                    href={`/dashboard/cards/${card.id}/edit`}
-                    aria-label={`Edit ${card.name}`}
-                    className={buttonVariants({ variant: "outline", size: "sm", className: "flex-1" })}
-                  >
-                    Edit
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {cards.map((card) => {
+            const progress = progressByCardId[card.id];
+            const percent =
+              progress.totalCount === 0
+                ? 0
+                : Math.round((progress.completedCount / progress.totalCount) * 100);
+
+            return (
+              <Card key={card.id}>
+                <CardContent className="flex flex-col gap-4 py-6">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle>{card.name}</CardTitle>
+                      {progress.hasBingo && (
+                        <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground">
+                          BINGO!
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {card.gridSize}×{card.gridSize} · {card.squareCount} squares
+                    </p>
+                    <div className="flex flex-col gap-1">
+                      <div className="h-2 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-success transition-[width]"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {progress.completedCount}/{progress.totalCount} done
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/dashboard/cards/${card.id}/play`}
+                      aria-label={`Play ${card.name}`}
+                      className={buttonVariants({
+                        variant: "primary",
+                        size: "sm",
+                        className: "flex-1",
+                      })}
+                    >
+                      Play
+                    </Link>
+                    <Link
+                      href={`/dashboard/cards/${card.id}/edit`}
+                      aria-label={`Edit ${card.name}`}
+                      className={buttonVariants({
+                        variant: "outline",
+                        size: "sm",
+                        className: "flex-1",
+                      })}
+                    >
+                      Edit
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
