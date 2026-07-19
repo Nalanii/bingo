@@ -12,22 +12,40 @@ function isSquareDone(square: Square, count: number): boolean {
   return square.isFreeSpace || count >= square.goal;
 }
 
-/** Whether any full row, column, or diagonal is done, using row-major positions (matches freeSpacePosition's layout). */
-function hasBingoLine(gridSize: number, doneByPosition: Map<number, boolean>): boolean {
+export type BingoLineType = "row" | "column" | "diagonal";
+
+export interface BingoLine {
+  type: BingoLineType;
+  /** Row/column index for row/column lines; 0 = main diagonal, 1 = anti-diagonal for diagonal lines. */
+  index: number;
+}
+
+/**
+ * Returns every completed row, column, and diagonal for a grid, using row-major
+ * positions (matches freeSpacePosition's layout: position = row * gridSize + col).
+ */
+export function getBingoLines(gridSize: number, doneByPosition: Map<number, boolean>): BingoLine[] {
   const isDone = (row: number, col: number) => doneByPosition.get(row * gridSize + col) ?? false;
+  const lines: BingoLine[] = [];
 
   for (let row = 0; row < gridSize; row++) {
-    if (Array.from({ length: gridSize }, (_, col) => isDone(row, col)).every(Boolean)) return true;
+    if (Array.from({ length: gridSize }, (_, col) => isDone(row, col)).every(Boolean)) {
+      lines.push({ type: "row", index: row });
+    }
   }
   for (let col = 0; col < gridSize; col++) {
-    if (Array.from({ length: gridSize }, (_, row) => isDone(row, col)).every(Boolean)) return true;
+    if (Array.from({ length: gridSize }, (_, row) => isDone(row, col)).every(Boolean)) {
+      lines.push({ type: "column", index: col });
+    }
   }
-  if (Array.from({ length: gridSize }, (_, i) => isDone(i, i)).every(Boolean)) return true;
+  if (Array.from({ length: gridSize }, (_, i) => isDone(i, i)).every(Boolean)) {
+    lines.push({ type: "diagonal", index: 0 });
+  }
   if (Array.from({ length: gridSize }, (_, i) => isDone(i, gridSize - 1 - i)).every(Boolean)) {
-    return true;
+    lines.push({ type: "diagonal", index: 1 });
   }
 
-  return false;
+  return lines;
 }
 
 /** Computes how many of a card's squares are done and whether a bingo line is complete. */
@@ -52,6 +70,6 @@ export function computeCardProgress(
   return {
     completedCount,
     totalCount: squares.length,
-    hasBingo: hasBingoLine(gridSize, doneByPosition),
+    hasBingo: getBingoLines(gridSize, doneByPosition).length > 0,
   };
 }
