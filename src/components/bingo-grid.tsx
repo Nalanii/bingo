@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { Square } from "@/lib/firestore/cards";
+import { getBingoLines } from "@/lib/cards/progress";
 import {
   decrementSquareProgress,
   getSquareCompletionHistory,
@@ -10,6 +11,7 @@ import {
   toggleSquareCompletion,
 } from "@/app/dashboard/cards/[id]/play/actions";
 import { CompletionHistoryModal } from "@/components/completion-history-modal";
+import { BingoCelebration } from "@/components/bingo-celebration";
 
 interface BingoGridProps {
   cardId: string;
@@ -27,6 +29,17 @@ function formatCompletionDate(completedAt: string): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+/** A square is done when it's the free space, its counter reached goal, or (for CHECK squares) it's in the completed set. */
+function isSquareDone(
+  square: Square,
+  completedSquareIds: Set<string>,
+  counts: Record<string, number>,
+): boolean {
+  if (square.isFreeSpace) return true;
+  if (square.kind === "COUNTER") return (counts[square.id] ?? 0) >= square.goal;
+  return completedSquareIds.has(square.id);
 }
 
 /**
@@ -53,6 +66,30 @@ export function BingoGrid({
   const [error, setError] = useState<string | null>(null);
   const [historySquare, setHistorySquare] = useState<Square | null>(null);
   const [squareToUncheck, setSquareToUncheck] = useState<Square | null>(null);
+
+  const [celebrationTrigger, setCelebrationTrigger] = useState(0);
+  const previousLineKeysRef = useRef<Set<string> | null>(null);
+
+  useEffect(() => {
+    const doneByPosition = new Map<number, boolean>();
+    for (const square of squares) {
+      doneByPosition.set(square.position, isSquareDone(square, completedSquareIds, counts));
+    }
+
+    const currentLineKeys = new Set(
+      getBingoLines(gridSize, doneByPosition).map((line) => `${line.type}-${line.index}`),
+    );
+    const previousLineKeys = previousLineKeysRef.current;
+    previousLineKeysRef.current = currentLineKeys;
+
+    // Seed on mount without celebrating lines that were already complete on load.
+    if (previousLineKeys === null) return;
+
+    const hasNewLine = Array.from(currentLineKeys).some((key) => !previousLineKeys.has(key));
+    if (hasNewLine) {
+      setCelebrationTrigger((prev) => prev + 1);
+    }
+  }, [completedSquareIds, counts, squares, gridSize]);
 
   /** Refetches a square's completion history and updates its displayed latest date. */
   async function refreshLatestCompletionDate(squareId: string) {
@@ -170,6 +207,7 @@ export function BingoGrid({
 
   return (
     <div className="flex flex-col gap-2">
+      {celebrationTrigger > 0 && <BingoCelebration key={celebrationTrigger} />}
       <div
         className="mx-auto grid w-full max-w-xl gap-1.5 sm:gap-2 md:gap-3"
         style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
