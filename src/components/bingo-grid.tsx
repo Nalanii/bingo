@@ -75,6 +75,8 @@ export function BingoGrid({
 
   const [celebrationTrigger, setCelebrationTrigger] = useState(0);
   const previousLineKeysRef = useRef<Set<string> | null>(null);
+  const [blackoutTrigger, setBlackoutTrigger] = useState(0);
+  const previousBlackoutRef = useRef<boolean | null>(null);
 
   useEffect(() => {
     const doneByPosition = new Map<number, boolean>();
@@ -88,11 +90,22 @@ export function BingoGrid({
     const previousLineKeys = previousLineKeysRef.current;
     previousLineKeysRef.current = currentLineKeys;
 
-    // Seed on mount without celebrating lines that were already complete on load.
+    const isBlackout = squares.length > 0 && squares.every((square) =>
+      isSquareDone(square, completedSquareIds, counts),
+    );
+    const previousBlackout = previousBlackoutRef.current;
+    previousBlackoutRef.current = isBlackout;
+
+    // Seed on mount without celebrating lines/blackout that were already complete on load.
     if (previousLineKeys === null) return;
 
+    const isNewBlackout = previousBlackout !== null && !previousBlackout && isBlackout;
+    if (isNewBlackout) {
+      setBlackoutTrigger((prev) => prev + 1);
+    }
+
     const hasNewLine = Array.from(currentLineKeys).some((key) => !previousLineKeys.has(key));
-    if (hasNewLine) {
+    if (hasNewLine && !isNewBlackout) {
       setCelebrationTrigger((prev) => prev + 1);
     }
   }, [completedSquareIds, counts, squares, gridSize]);
@@ -214,6 +227,9 @@ export function BingoGrid({
   return (
     <div className="flex flex-col gap-2">
       {celebrationTrigger > 0 && <BingoCelebration key={celebrationTrigger} />}
+      {blackoutTrigger > 0 && (
+        <BingoCelebration key={`blackout-${blackoutTrigger}`} variant="blackout" />
+      )}
       <div
         className="mx-auto grid w-full max-w-xl gap-1.5 sm:gap-2 md:gap-3"
         style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
