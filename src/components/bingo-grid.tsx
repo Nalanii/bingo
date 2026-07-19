@@ -346,7 +346,7 @@ function BingoSquareCell({
         <div className="flex items-center gap-1.5">
           <button
             type="button"
-            className="text-card-foreground text-sm leading-none disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
+            className="text-sm leading-none disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
             aria-label={`Decrease progress on ${label}`}
             disabled={pending || count <= 0}
             onClick={() => onProgressChange(square, "decrement")}
@@ -358,7 +358,7 @@ function BingoSquareCell({
           </span>
           <button
             type="button"
-            className="text-card-foreground text-sm leading-none disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
+            className="text-sm leading-none disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
             aria-label={`Increase progress on ${label}`}
             disabled={pending || count >= goal}
             onClick={() => onProgressChange(square, "increment")}
