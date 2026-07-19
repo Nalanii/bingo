@@ -29,6 +29,7 @@ export interface CardSummary {
   hasFreeSpace: boolean;
   layout: CardLayout;
   squareCount: number;
+  squares: Square[];
 }
 
 export interface CreateCardInput {
@@ -133,6 +134,7 @@ export async function listCardsByOwner(ownerId: string): Promise<CardSummary[]> 
       hasFreeSpace: data.hasFreeSpace,
       layout: data.layout,
       squareCount: data.squares?.length ?? 0,
+      squares: data.squares ?? [],
     };
   });
 }
