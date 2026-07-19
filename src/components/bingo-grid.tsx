@@ -31,7 +31,13 @@ function formatCompletionDate(completedAt: string): string {
   });
 }
 
-/** A square is done when it's the free space, its counter reached goal, or (for CHECK squares) it's in the completed set. */
+/**
+ * A square is done when it's the free space, its counter reached goal, or (for CHECK
+ * squares) it's in the completed set. This mirrors (but isn't the same as) the
+ * `isSquareDone` in `src/lib/cards/progress.ts` — that version derives done-ness from
+ * completion counts, while this one reads client-side `completedSquareIds`/`counts`
+ * state directly, since CHECK-square toggles here don't update `counts`.
+ */
 function isSquareDone(
   square: Square,
   completedSquareIds: Set<string>,
