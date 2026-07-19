@@ -52,6 +52,7 @@ export function BingoGrid({
   const [pendingSquareIds, setPendingSquareIds] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
   const [historySquare, setHistorySquare] = useState<Square | null>(null);
+  const [squareToUncheck, setSquareToUncheck] = useState<Square | null>(null);
 
   /** Refetches a square's completion history and updates its displayed latest date. */
   async function refreshLatestCompletionDate(squareId: string) {
@@ -73,9 +74,20 @@ export function BingoGrid({
   const slotCount = gridSize * gridSize;
   const slots = Array.from({ length: slotCount }, (_, position) => squaresByPosition.get(position));
 
-  async function handleToggle(square: Square) {
+  function handleToggle(square: Square) {
     if (pendingSquareIds.has(square.id)) return;
 
+    // Un-checking deletes the square's only completion doc, permanently
+    // losing its completed date — confirm before doing that.
+    if (completedSquareIds.has(square.id)) {
+      setSquareToUncheck(square);
+      return;
+    }
+
+    performToggle(square);
+  }
+
+  async function performToggle(square: Square) {
     const wasCompleted = completedSquareIds.has(square.id);
     setError(null);
     setPendingSquareIds((prev) => new Set(prev).add(square.id));
@@ -198,6 +210,45 @@ export function BingoGrid({
             });
           }}
         />
+      )}
+      {squareToUncheck && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setSquareToUncheck(null)}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-label={`Undo ${squareToUncheck.label}?`}
+            className="border-border bg-card text-card-foreground mx-4 flex w-full max-w-sm flex-col gap-3 rounded-[var(--radius-sm)] border-2 p-4"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className="text-sm">
+              Undo <span className="font-bold">{squareToUncheck.label}</span>? This permanently
+              deletes its completion history.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="border-border bg-card text-card-foreground rounded-[var(--radius-sm)] border px-3 py-1 text-sm font-medium"
+                onClick={() => setSquareToUncheck(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="border-destructive bg-destructive text-destructive-foreground rounded-[var(--radius-sm)] border px-3 py-1 text-sm font-medium"
+                onClick={() => {
+                  const square = squareToUncheck;
+                  setSquareToUncheck(null);
+                  performToggle(square);
+                }}
+              >
+                Undo
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
