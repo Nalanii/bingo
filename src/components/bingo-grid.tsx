@@ -329,22 +329,22 @@ function BingoSquareCell({
         <span className="line-clamp-2 text-[0.6rem] leading-tight font-medium break-words sm:text-xs">
           {label}
         </span>
-        <span aria-live="polite" className="text-[0.6rem] font-bold sm:text-xs">
-          {count}/{goal}
-        </span>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
-            className="border-border bg-card text-card-foreground flex h-5 w-5 items-center justify-center rounded-full border text-xs leading-none disabled:cursor-not-allowed disabled:opacity-40 sm:h-6 sm:w-6"
+            className="text-card-foreground text-sm leading-none disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
             aria-label={`Decrease progress on ${label}`}
             disabled={pending || count <= 0}
             onClick={() => onProgressChange(square, "decrement")}
           >
             −
           </button>
+          <span aria-live="polite" className="text-[0.6rem] font-bold sm:text-xs">
+            {count}/{goal}
+          </span>
           <button
             type="button"
-            className="border-border bg-card text-card-foreground flex h-5 w-5 items-center justify-center rounded-full border text-xs leading-none disabled:cursor-not-allowed disabled:opacity-40 sm:h-6 sm:w-6"
+            className="text-card-foreground text-sm leading-none disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
             aria-label={`Increase progress on ${label}`}
             disabled={pending || count >= goal}
             onClick={() => onProgressChange(square, "increment")}
