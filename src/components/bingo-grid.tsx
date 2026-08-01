@@ -13,6 +13,7 @@ import {
 } from "@/app/dashboard/cards/[id]/play/actions";
 import { CompletionHistoryModal } from "@/components/completion-history-modal";
 import { BingoCelebration } from "@/components/bingo-celebration";
+import { UncheckConfirmDialog } from "@/components/uncheck-confirm-dialog";
 
 interface BingoGridProps {
   cardId: string;
@@ -273,43 +274,15 @@ export function BingoGrid({
         />
       )}
       {squareToUncheck && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          onClick={() => setSquareToUncheck(null)}
-        >
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            aria-label={`Undo ${squareToUncheck.label}?`}
-            className="border-border bg-card text-card-foreground mx-4 flex w-full max-w-sm flex-col gap-3 rounded-[var(--radius-sm)] border-2 p-4"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <p className="text-sm">
-              Undo <span className="font-bold">{squareToUncheck.label}</span>? This permanently
-              deletes its completion history.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className="border-border bg-card text-card-foreground rounded-[var(--radius-sm)] border px-3 py-1 text-sm font-medium"
-                onClick={() => setSquareToUncheck(null)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="border-destructive bg-destructive text-destructive-foreground rounded-[var(--radius-sm)] border px-3 py-1 text-sm font-medium"
-                onClick={() => {
-                  const square = squareToUncheck;
-                  setSquareToUncheck(null);
-                  performToggle(square);
-                }}
-              >
-                Undo
-              </button>
-            </div>
-          </div>
-        </div>
+        <UncheckConfirmDialog
+          label={squareToUncheck.label}
+          onCancel={() => setSquareToUncheck(null)}
+          onConfirm={() => {
+            const square = squareToUncheck;
+            setSquareToUncheck(null);
+            performToggle(square);
+          }}
+        />
       )}
     </div>
   );
