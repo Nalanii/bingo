@@ -50,6 +50,7 @@ export function CompletionHistoryModal({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  const [statusMessage, setStatusMessage] = useState("");
 
   const dialogRef = useRef<HTMLDivElement>(null);
   useDialogA11y(dialogRef, onClose);
@@ -60,6 +61,7 @@ export function CompletionHistoryModal({
     async function load() {
       setLoading(true);
       setLoadError(null);
+      setStatusMessage("Loading completion history…");
       const result = await getSquareCompletionHistory(cardId, square.id);
       if (cancelled) return;
 
@@ -76,6 +78,7 @@ export function CompletionHistoryModal({
         setRowErrors({});
       }
       setLoading(false);
+      setStatusMessage("");
     }
 
     load();
@@ -161,11 +164,10 @@ export function CompletionHistoryModal({
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {loading && (
-            <p role="status" className="text-sm">
-              Loading…
-            </p>
-          )}
+          <p role="status" className="sr-only">
+            {statusMessage}
+          </p>
+          {loading && <p className="text-sm">Loading…</p>}
 
           {!loading && loadError && (
             <p role="alert" className="text-destructive text-sm">
