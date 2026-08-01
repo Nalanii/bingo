@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { BingoLine } from "@/lib/cards/progress";
+import { buildLineSrText } from "@/lib/cards/celebration-text";
 
 const CONFETTI_COLORS = [
   "var(--color-primary)",
@@ -13,6 +15,7 @@ export type BingoCelebrationVariant = "line" | "blackout";
 
 export interface BingoCelebrationProps {
   variant?: BingoCelebrationVariant;
+  lines?: BingoLine[];
 }
 
 interface CelebrationConfig {
@@ -65,7 +68,7 @@ function createConfettiPieces(count: number): ConfettiPiece[] {
  * The `variant` prop ("line" | "blackout", defaults to "line") controls the
  * confetti count, visible duration, and badge/screen-reader text.
  */
-export function BingoCelebration({ variant = "line" }: BingoCelebrationProps) {
+export function BingoCelebration({ variant = "line", lines }: BingoCelebrationProps) {
   const config = CELEBRATION_CONFIG[variant];
   const [pieces] = useState(() => createConfettiPieces(config.confettiCount));
   const [visible, setVisible] = useState(true);
@@ -76,6 +79,8 @@ export function BingoCelebration({ variant = "line" }: BingoCelebrationProps) {
   }, [config.visibleDurationMs]);
 
   if (!visible) return null;
+
+  const srText = variant === "blackout" ? config.srText : buildLineSrText(lines ?? [], config.srText);
 
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
@@ -100,7 +105,7 @@ export function BingoCelebration({ variant = "line" }: BingoCelebrationProps) {
         </span>
       </div>
       <p role="status" className="sr-only">
-        {config.srText}
+        {srText}
       </p>
     </div>
   );

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Square } from "@/lib/firestore/cards";
-import { getBingoLines } from "@/lib/cards/progress";
+import { getBingoLines, type BingoLine } from "@/lib/cards/progress";
 import {
   decrementSquareProgress,
   getSquareCompletionHistory,
@@ -76,6 +76,7 @@ export function BingoGrid({
   const [squareToUncheck, setSquareToUncheck] = useState<Square | null>(null);
 
   const [celebrationTrigger, setCelebrationTrigger] = useState(0);
+  const [newLines, setNewLines] = useState<BingoLine[]>([]);
   const previousLineKeysRef = useRef<Set<string> | null>(null);
   const [blackoutTrigger, setBlackoutTrigger] = useState(0);
   const previousBlackoutRef = useRef<boolean | null>(null);
@@ -86,9 +87,8 @@ export function BingoGrid({
       doneByPosition.set(square.position, isSquareDone(square, completedSquareIds, counts));
     }
 
-    const currentLineKeys = new Set(
-      getBingoLines(gridSize, doneByPosition).map((line) => `${line.type}-${line.index}`),
-    );
+    const currentLines = getBingoLines(gridSize, doneByPosition);
+    const currentLineKeys = new Set(currentLines.map((line) => `${line.type}-${line.index}`));
     const previousLineKeys = previousLineKeysRef.current;
     previousLineKeysRef.current = currentLineKeys;
 
@@ -104,10 +104,14 @@ export function BingoGrid({
     const isNewBlackout = previousBlackout !== null && !previousBlackout && isBlackout;
     if (isNewBlackout) {
       setBlackoutTrigger((prev) => prev + 1);
+      return;
     }
 
-    const hasNewLine = Array.from(currentLineKeys).some((key) => !previousLineKeys.has(key));
-    if (hasNewLine && !isNewBlackout) {
+    const linesJustCompleted = currentLines.filter(
+      (line) => !previousLineKeys.has(`${line.type}-${line.index}`),
+    );
+    if (linesJustCompleted.length > 0) {
+      setNewLines(linesJustCompleted);
       setCelebrationTrigger((prev) => prev + 1);
     }
   }, [completedSquareIds, counts, squares, gridSize]);
@@ -228,7 +232,7 @@ export function BingoGrid({
 
   return (
     <div className="flex flex-col gap-2">
-      {celebrationTrigger > 0 && <BingoCelebration key={celebrationTrigger} />}
+      {celebrationTrigger > 0 && <BingoCelebration key={celebrationTrigger} lines={newLines} />}
       {blackoutTrigger > 0 && (
         <BingoCelebration key={`blackout-${blackoutTrigger}`} variant="blackout" />
       )}
@@ -240,6 +244,7 @@ export function BingoGrid({
           <BingoSquareCell
             key={square?.id ?? position}
             square={square}
+            gridSize={gridSize}
             completed={square ? completedSquareIds.has(square.id) : false}
             count={square ? (counts[square.id] ?? 0) : 0}
             latestCompletionDate={square ? latestCompletionDates[square.id] : undefined}
@@ -290,6 +295,7 @@ export function BingoGrid({
 
 function BingoSquareCell({
   square,
+  gridSize,
   completed,
   count,
   latestCompletionDate,
@@ -299,6 +305,7 @@ function BingoSquareCell({
   onViewHistory,
 }: {
   square: Square | undefined;
+  gridSize: number;
   completed: boolean;
   count: number;
   latestCompletionDate: string | undefined;
@@ -316,6 +323,8 @@ function BingoSquareCell({
   }
 
   const { isFreeSpace, kind, label, goal } = square;
+  const row = Math.floor(square.position / gridSize) + 1;
+  const col = (square.position % gridSize) + 1;
   const isCheckInteractive = kind === "CHECK" && !isFreeSpace;
   const isCounter = kind === "COUNTER" && !isFreeSpace;
   const goalReached = isCounter && count >= goal;
@@ -387,7 +396,7 @@ function BingoSquareCell({
           <button
             type="button"
             className="text-sm leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
-            aria-label={`Decrease progress on ${label}`}
+            aria-label={`Row ${row} of ${gridSize}, column ${col} of ${gridSize}: Decrease progress on ${label}`}
             disabled={pending || count <= 0}
             onClick={() => onProgressChange(square, "decrement")}
           >
@@ -399,7 +408,7 @@ function BingoSquareCell({
           <button
             type="button"
             className="text-sm leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
-            aria-label={`Increase progress on ${label}`}
+            aria-label={`Row ${row} of ${gridSize}, column ${col} of ${gridSize}: Increase progress on ${label}`}
             disabled={pending || count >= goal}
             onClick={() => onProgressChange(square, "increment")}
           >
@@ -431,7 +440,7 @@ function BingoSquareCell({
         type="button"
         className="flex w-full flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-wait disabled:opacity-70"
         aria-pressed={completed}
-        aria-label={`${label} — ${completed ? "completed" : "not completed"}, tap to toggle`}
+        aria-label={`Row ${row} of ${gridSize}, column ${col} of ${gridSize}: ${label} — ${completed ? "completed" : "not completed"}, tap to toggle`}
         disabled={pending}
         onClick={() => onToggle(square)}
       >
