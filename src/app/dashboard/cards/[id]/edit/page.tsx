@@ -41,6 +41,7 @@ export default async function EditCardPage({
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
+      <h1 className="sr-only">Edit {card.name}</h1>
       <Link href="/dashboard" className="text-sm text-muted-foreground">
         ← Back to your cards
       </Link>

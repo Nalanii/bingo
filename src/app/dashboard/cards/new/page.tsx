@@ -13,6 +13,7 @@ export default async function NewCardPage() {
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
+      <h1 className="sr-only">Build a new card</h1>
       <Link href="/dashboard" className="text-sm text-muted-foreground">
         ← Back to your cards
       </Link>
