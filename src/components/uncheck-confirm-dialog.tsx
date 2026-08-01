@@ -33,20 +33,20 @@ export function UncheckConfirmDialog({ label, onCancel, onConfirm }: UncheckConf
         onClick={(event) => event.stopPropagation()}
       >
         <p className="text-sm">
-          Undo <span className="font-bold">{label}</span>? This permanently deletes its
-          completion history.
+          Undo <span className="font-bold">{label}</span>? This permanently deletes its completion
+          history.
         </p>
         <div className="flex justify-end gap-2">
           <button
             type="button"
-            className="border-control-border bg-card text-card-foreground rounded-[var(--radius-sm)] border px-3 py-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="border-control-border bg-card text-card-foreground focus-visible:ring-ring focus-visible:ring-offset-background rounded-[var(--radius-sm)] border px-3 py-1 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             onClick={onCancel}
           >
             Cancel
           </button>
           <button
             type="button"
-            className="border-destructive bg-destructive text-destructive-foreground rounded-[var(--radius-sm)] border px-3 py-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="border-destructive bg-destructive text-destructive-foreground focus-visible:ring-ring focus-visible:ring-offset-background rounded-[var(--radius-sm)] border px-3 py-1 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             onClick={onConfirm}
           >
             Undo

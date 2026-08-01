@@ -338,7 +338,7 @@ function BingoSquareCell({
         ? "border-success bg-success text-success-foreground"
         : isPartial
           ? "border-success bg-success/20 text-card-foreground"
-          : "border-border bg-card text-card-foreground",
+          : "border-control-border bg-card text-card-foreground",
   );
 
   if (isFreeSpace) {
@@ -371,7 +371,7 @@ function BingoSquareCell({
   const historyDateButton = (label: string, date: string) => (
     <button
       type="button"
-      className="flex flex-col text-[0.55rem] leading-tight italic opacity-80 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-[0.6rem]"
+      className="flex flex-col text-[0.55rem] leading-tight italic hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-[0.6rem]"
       onClick={(event) => {
         event.stopPropagation();
         onViewHistory(square);
@@ -388,16 +388,17 @@ function BingoSquareCell({
         {goalReached && (
           <Check
             aria-hidden="true"
-            className="text-success-foreground absolute top-1 right-1 h-3.5 w-3.5 sm:h-4 sm:w-4"
+            className="text-success-foreground pointer-events-none absolute top-1 right-1 h-3.5 w-3.5 sm:h-4 sm:w-4"
           />
         )}
         {renderLabel("line-clamp-3", "text-[0.6rem] sm:text-xs")}
         <div className="flex items-center gap-1.5">
           <button
             type="button"
-            className="text-sm leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
+            className="text-sm leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-disabled:cursor-wait aria-disabled:opacity-70 disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
             aria-label={`Row ${row} of ${gridSize}, column ${col} of ${gridSize}: Decrease progress on ${label}`}
-            disabled={pending || count <= 0}
+            aria-disabled={pending}
+            disabled={count <= 0}
             onClick={() => onProgressChange(square, "decrement")}
           >
             −
@@ -407,9 +408,10 @@ function BingoSquareCell({
           </span>
           <button
             type="button"
-            className="text-sm leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
+            className="text-sm leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-disabled:cursor-wait aria-disabled:opacity-70 disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
             aria-label={`Row ${row} of ${gridSize}, column ${col} of ${gridSize}: Increase progress on ${label}`}
-            disabled={pending || count >= goal}
+            aria-disabled={pending}
+            disabled={count >= goal}
             onClick={() => onProgressChange(square, "increment")}
           >
             +
@@ -433,15 +435,15 @@ function BingoSquareCell({
       {completed && (
         <Check
           aria-hidden="true"
-          className="text-success-foreground absolute top-1 right-1 h-3.5 w-3.5 sm:h-4 sm:w-4"
+          className="text-success-foreground pointer-events-none absolute top-1 right-1 h-3.5 w-3.5 sm:h-4 sm:w-4"
         />
       )}
       <button
         type="button"
-        className="flex w-full flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-wait disabled:opacity-70"
+        className="flex w-full flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-disabled:cursor-wait aria-disabled:opacity-70"
         aria-pressed={completed}
         aria-label={`Row ${row} of ${gridSize}, column ${col} of ${gridSize}: ${label} — ${completed ? "completed" : "not completed"}, tap to toggle`}
-        disabled={pending}
+        aria-disabled={pending}
         onClick={() => onToggle(square)}
       >
         {content}

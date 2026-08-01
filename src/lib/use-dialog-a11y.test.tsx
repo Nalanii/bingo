@@ -84,4 +84,14 @@ describe("useDialogA11y", () => {
     expect(onCloseA).not.toHaveBeenCalled();
     expect(onCloseB).toHaveBeenCalledTimes(1);
   });
+
+  it("keeps Tab within the dialog even when focus starts on the container itself", () => {
+    render(<Harness onClose={vi.fn()} />);
+    const container = screen.getByRole("dialog");
+    container.focus();
+    expect(container).toHaveFocus();
+
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(screen.getByText("Last")).toHaveFocus();
+  });
 });

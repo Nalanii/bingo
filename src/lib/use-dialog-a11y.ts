@@ -17,10 +17,7 @@ const FOCUSABLE_SELECTOR =
  * re-capture "previously focused" mid-interaction and yank focus back to
  * the first control.
  */
-export function useDialogA11y(
-  containerRef: RefObject<HTMLElement | null>,
-  onClose: () => void,
-) {
+export function useDialogA11y(containerRef: RefObject<HTMLElement | null>, onClose: () => void) {
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -49,6 +46,16 @@ export function useDialogA11y(
       if (elements.length === 0) return;
       const first = elements[0];
       const last = elements[elements.length - 1];
+
+      const focusIsOutsideFocusableList = !elements.includes(document.activeElement as HTMLElement);
+      if (focusIsOutsideFocusableList) {
+        // Focus is on the container itself (or somewhere else untracked) —
+        // send it to a definite end of the list rather than letting native
+        // Tab order decide, which could escape the dialog.
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+        return;
+      }
 
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();

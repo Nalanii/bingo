@@ -29,7 +29,9 @@ describe("design token contrast (light mode)", () => {
   });
 
   it("destructive bg vs destructive-foreground text meets 4.5:1", () => {
-    expect(contrastRatio(LIGHT.destructive, LIGHT.destructiveForeground)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(LIGHT.destructive, LIGHT.destructiveForeground)).toBeGreaterThanOrEqual(
+      4.5,
+    );
   });
 
   it("control-border meets 3:1 against both background and card", () => {

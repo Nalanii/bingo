@@ -83,30 +83,32 @@ export function BingoCelebration({ variant = "line", lines }: BingoCelebrationPr
   const srText = variant === "blackout" ? config.srText : buildLineSrText(lines ?? [], config.srText);
 
   return (
-    <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
-      {pieces.map((piece) => (
-        <span
-          key={piece.id}
-          className="absolute top-0 h-2.5 w-2.5 rounded-sm"
-          style={{
-            left: `${piece.left}%`,
-            backgroundColor: piece.color,
-            transform: `rotate(${piece.rotation}deg)`,
-            animation: `confetti-fall ${piece.duration}s ease-in ${piece.delay}s forwards`,
-          }}
-        />
-      ))}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2">
-        <span
-          className="font-display border-accent bg-accent text-accent-foreground inline-block rounded-[var(--radius-sm)] border-2 px-4 py-2 text-lg font-bold tracking-wide uppercase shadow-lg"
-          style={{ animation: "wobble 0.4s ease-in-out 2" }}
-        >
-          {config.badgeText}
-        </span>
+    <>
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
+        {pieces.map((piece) => (
+          <span
+            key={piece.id}
+            className="absolute top-0 h-2.5 w-2.5 rounded-sm"
+            style={{
+              left: `${piece.left}%`,
+              backgroundColor: piece.color,
+              transform: `rotate(${piece.rotation}deg)`,
+              animation: `confetti-fall ${piece.duration}s ease-in ${piece.delay}s forwards`,
+            }}
+          />
+        ))}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2">
+          <span
+            className="font-display border-accent bg-accent text-accent-foreground inline-block rounded-[var(--radius-sm)] border-2 px-4 py-2 text-lg font-bold tracking-wide uppercase shadow-lg"
+            style={{ animation: "wobble 0.4s ease-in-out 2" }}
+          >
+            {config.badgeText}
+          </span>
+        </div>
       </div>
       <p role="status" className="sr-only">
         {srText}
       </p>
-    </div>
+    </>
   );
 }
