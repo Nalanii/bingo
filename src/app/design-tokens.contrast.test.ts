@@ -36,6 +36,12 @@ describe("design token contrast (light mode)", () => {
     expect(contrastRatio(LIGHT.controlBorder, LIGHT.background)).toBeGreaterThanOrEqual(3.0);
     expect(contrastRatio(LIGHT.controlBorder, LIGHT.card)).toBeGreaterThanOrEqual(3.0);
   });
+
+  it("wordmark on-surface text tokens meet 4.5:1 against background", () => {
+    expect(contrastRatio("#e10051", LIGHT.background)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio("#1e7e75", LIGHT.background)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio("#8e6d00", LIGHT.background)).toBeGreaterThanOrEqual(4.5);
+  });
 });
 
 describe("design token contrast (dark mode)", () => {

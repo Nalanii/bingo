@@ -26,11 +26,11 @@ export default async function Home() {
           </span>
           <h1 className="font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
             Turn your goals into a{" "}
-            <span className="text-primary">B</span>
+            <span className="text-primary-on-surface">B</span>
             <span className="text-secondary">I</span>
-            <span className="text-success">N</span>
-            <span className="text-primary">G</span>
-            <span className="text-accent">O</span>.
+            <span className="text-success-on-surface">N</span>
+            <span className="text-primary-on-surface">G</span>
+            <span className="text-accent-on-surface">O</span>.
           </h1>
           <p className="max-w-md text-lg text-muted-foreground">
             Build 3×3 or 5×5 cards for anything — a year of adventures, a reading

@@ -26,6 +26,10 @@
   --destructive: #e2243d; /* alert red, darkened for 4.5:1 text contrast */
   --destructive-foreground: #ffffff;
 
+  --primary-on-surface: #e10051; /* text-safe darker primary, for text directly on background/card */
+  --success-on-surface: #1e7e75; /* text-safe darker success */
+  --accent-on-surface: #8e6d00; /* text-safe darker accent */
+
   --radius: 1rem;
 }
 
@@ -50,6 +54,10 @@
     --success-foreground: #06312c;
     --destructive: #ff5c72;
     --destructive-foreground: #2a0714;
+
+    --primary-on-surface: #ff6aa2;
+    --success-on-surface: #4fd6c9;
+    --accent-on-surface: #ffdd6b;
   }
 }
 
@@ -73,6 +81,9 @@
   --color-success-foreground: var(--success-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-primary-on-surface: var(--primary-on-surface);
+  --color-success-on-surface: var(--success-on-surface);
+  --color-accent-on-surface: var(--accent-on-surface);
 
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
