@@ -34,7 +34,15 @@ export default function RootLayout({
       lang="en"
       className={`${display.variable} ${body.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <a
+          href="#main-content"
+          className="bg-primary text-primary-foreground sr-only rounded-[var(--radius-sm)] px-4 py-2 text-sm font-semibold focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50"
+        >
+          Skip to main content
+        </a>
+        {children}
+      </body>
     </html>
   );
 }

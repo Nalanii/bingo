@@ -161,7 +161,11 @@ export function CompletionHistoryModal({
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {loading && <p className="text-sm">Loading…</p>}
+          {loading && (
+            <p role="status" className="text-sm">
+              Loading…
+            </p>
+          )}
 
           {!loading && loadError && (
             <p role="alert" className="text-destructive text-sm">

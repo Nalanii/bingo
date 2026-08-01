@@ -12,7 +12,10 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-full flex-col">
       <header className="sticky top-0 z-20 border-b-2 border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-3">
+        <nav
+          aria-label="Main"
+          className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-3"
+        >
           <Link
             href="/dashboard"
             className="shrink-0 font-display text-xl font-bold"
@@ -25,9 +28,9 @@ export default async function DashboardLayout({
             </span>
             <SignOutButton />
           </div>
-        </div>
+        </nav>
       </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
+      <main id="main-content" className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
     </div>
   );
 }

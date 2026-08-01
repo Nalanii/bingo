@@ -8,7 +8,7 @@ export default async function Home() {
   const user = await getUser();
 
   return (
-    <main className="relative flex flex-1 flex-col items-center overflow-hidden">
+    <main id="main-content" className="relative flex flex-1 flex-col items-center overflow-hidden">
       {/* playful background blobs */}
       <div
         aria-hidden
