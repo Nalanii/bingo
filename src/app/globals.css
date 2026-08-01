@@ -12,9 +12,10 @@
   --muted: #f3ecf9;
   --muted-foreground: #6b6480;
   --border: #ece3f5;
+  --control-border: #a57acf; /* darker than --border: meets 3:1 for interactive-control boundaries */
   --ring: #7c4dff;
 
-  --primary: #ff4d8d; /* hot magenta */
+  --primary: #e60053; /* hot magenta, darkened for 4.5:1 text contrast */
   --primary-foreground: #ffffff;
   --secondary: #7c4dff; /* electric purple */
   --secondary-foreground: #ffffff;
@@ -22,7 +23,7 @@
   --accent-foreground: #211e2e;
   --success: #2ec4b6; /* teal */
   --success-foreground: #06312c;
-  --destructive: #e5384f; /* alert red */
+  --destructive: #e2243d; /* alert red, darkened for 4.5:1 text contrast */
   --destructive-foreground: #ffffff;
 
   --radius: 1rem;
@@ -37,6 +38,7 @@
     --muted: #2a2340;
     --muted-foreground: #b0a6c9;
     --border: #352b4d;
+    --control-border: #7662a7; /* lighter than --border: meets 3:1 for interactive-control boundaries */
     --ring: #b28bff;
     --primary: #ff6aa2;
     --primary-foreground: #2a0714;
@@ -59,6 +61,7 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-control-border: var(--control-border);
   --color-ring: var(--ring);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
