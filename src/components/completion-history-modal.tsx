@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Square } from "@/lib/firestore/cards";
 import {
   getSquareCompletionHistory,
   updateSquareCompletionDate,
   type CompletionHistoryEntry,
 } from "@/app/dashboard/cards/[id]/play/actions";
+import { useDialogA11y } from "@/lib/use-dialog-a11y";
 
 interface CompletionHistoryModalProps {
   cardId: string;
@@ -50,6 +51,9 @@ export function CompletionHistoryModal({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogA11y(dialogRef, onClose);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -80,17 +84,6 @@ export function CompletionHistoryModal({
       cancelled = true;
     };
   }, [cardId, square.id]);
-
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
 
   function isDirty(entry: CompletionHistoryEntry): boolean {
     const draftValue = draftValues[entry.id];
@@ -147,10 +140,12 @@ export function CompletionHistoryModal({
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={`Completion history for ${square.label}`}
-        className="border-border bg-card text-card-foreground mx-4 flex max-h-[80vh] w-full max-w-sm flex-col gap-3 rounded-[var(--radius-sm)] border-2 p-4"
+        tabIndex={-1}
+        className="border-border bg-card text-card-foreground mx-4 flex max-h-[80vh] w-full max-w-sm flex-col gap-3 rounded-[var(--radius-sm)] border-2 p-4 focus-visible:outline-none"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-2">
