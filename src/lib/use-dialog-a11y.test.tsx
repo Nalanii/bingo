@@ -65,4 +65,23 @@ describe("useDialogA11y", () => {
     rerender(<TestApp open={false} onClose={vi.fn()} />);
     expect(trigger).toHaveFocus();
   });
+
+  it("does not re-run its setup effect when onClose changes identity but the dialog stays mounted", () => {
+    const onCloseA = vi.fn();
+    const onCloseB = vi.fn();
+    const { rerender } = render(<Harness onClose={onCloseA} />);
+
+    const last = screen.getByText("Last");
+    last.focus();
+    expect(last).toHaveFocus();
+
+    rerender(<Harness onClose={onCloseB} />);
+    // A re-run of the setup effect would have refocused "First" — it must not.
+    expect(last).toHaveFocus();
+
+    // Escape must call the latest onClose, not the one captured at mount.
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onCloseA).not.toHaveBeenCalled();
+    expect(onCloseB).toHaveBeenCalledTimes(1);
+  });
 });
