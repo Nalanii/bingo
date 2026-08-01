@@ -158,7 +158,7 @@ export function CompletionHistoryModal({
           <button
             type="button"
             aria-label="Close"
-            className="border-control-border bg-card text-card-foreground flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs leading-none"
+            className="border-control-border bg-card text-card-foreground flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             onClick={onClose}
           >
             ✕
@@ -188,7 +188,7 @@ export function CompletionHistoryModal({
                   <li key={entry.id} className="flex flex-col gap-1">
                     <input
                       type="date"
-                      className="border-control-border bg-card text-card-foreground w-full rounded-[var(--radius-sm)] border px-2 py-1 text-sm"
+                      className="border-control-border bg-card text-card-foreground w-full rounded-[var(--radius-sm)] border px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       value={draftValue}
                       onChange={(event) =>
                         setDraftValues((prev) => ({ ...prev, [entry.id]: event.target.value }))
@@ -222,7 +222,7 @@ export function CompletionHistoryModal({
             )}
             <button
               type="button"
-              className="border-control-border bg-card text-card-foreground rounded-[var(--radius-sm)] border px-3 py-1 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-40"
+              className="border-control-border bg-card text-card-foreground rounded-[var(--radius-sm)] border px-3 py-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-40"
               disabled={dirtyEntries.length === 0 || saving}
               onClick={handleSaveAll}
             >
