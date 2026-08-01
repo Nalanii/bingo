@@ -103,7 +103,9 @@ export function SquareEntryStep({
               }
             />
             {errorIndex === index ? (
-              <p className="text-sm text-primary">Give this square a label</p>
+              <p role="alert" className="text-destructive text-sm">
+                Give this square a label
+              </p>
             ) : null}
             <div className="flex flex-wrap items-center gap-4">
               <SegmentedControl

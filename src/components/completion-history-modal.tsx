@@ -175,7 +175,7 @@ export function CompletionHistoryModal({
 
           {!loading && !loadError && entries && entries.length > 0 && (
             <ul className="flex flex-col gap-2">
-              {entries.map((entry) => {
+              {entries.map((entry, index) => {
                 const draftValue = draftValues[entry.id] ?? isoToDateInputValue(entry.completedAt);
                 const rowError = rowErrors[entry.id];
 
@@ -183,6 +183,7 @@ export function CompletionHistoryModal({
                   <li key={entry.id} className="flex flex-col gap-1">
                     <input
                       type="date"
+                      aria-label={`Completion date, entry ${index + 1} of ${entries.length}`}
                       className="border-control-border bg-card text-card-foreground w-full rounded-[var(--radius-sm)] border px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       value={draftValue}
                       onChange={(event) =>

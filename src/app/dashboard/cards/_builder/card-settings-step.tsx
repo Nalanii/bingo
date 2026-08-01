@@ -64,7 +64,9 @@ export function CardSettingsStep({
             }}
           />
           {nameError ? (
-            <p className="text-sm text-primary">{nameError}</p>
+            <p role="alert" className="text-destructive text-sm">
+              {nameError}
+            </p>
           ) : null}
         </div>
 

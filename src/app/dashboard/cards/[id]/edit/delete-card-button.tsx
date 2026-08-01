@@ -41,7 +41,11 @@ export function DeleteCardButton({
       <p className="text-sm text-muted-foreground">
         Delete this card for good? This can&rsquo;t be undone.
       </p>
-      {error ? <p className="text-sm text-primary">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-destructive text-sm">
+          {error}
+        </p>
+      ) : null}
       <div className="flex gap-2">
         <Button
           type="button"

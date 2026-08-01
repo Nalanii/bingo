@@ -86,7 +86,11 @@ export function ReviewStep({
             </li>
           ))}
         </ul>
-        {error ? <p className="text-sm text-primary">{error}</p> : null}
+        {error ? (
+          <p role="alert" className="text-destructive text-sm">
+            {error}
+          </p>
+        ) : null}
         <div className="flex justify-between">
           <Button
             variant="outline"
