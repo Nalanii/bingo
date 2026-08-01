@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Square } from "@/lib/firestore/cards";
 import { getBingoLines } from "@/lib/cards/progress";
@@ -354,7 +355,7 @@ function BingoSquareCell({
       : completed || goalReached
         ? "border-success bg-success text-success-foreground"
         : isPartial
-          ? "border-success/50 bg-success/50 text-card-foreground"
+          ? "border-success bg-success/20 text-card-foreground"
           : "border-border bg-card text-card-foreground",
   );
 
@@ -402,6 +403,12 @@ function BingoSquareCell({
   if (isCounter) {
     return (
       <div className={sharedClassName}>
+        {goalReached && (
+          <Check
+            aria-hidden="true"
+            className="text-success-foreground absolute top-1 right-1 h-3.5 w-3.5 sm:h-4 sm:w-4"
+          />
+        )}
         {renderLabel("line-clamp-3", "text-[0.6rem] sm:text-xs")}
         <div className="flex items-center gap-1.5">
           <button
@@ -441,6 +448,12 @@ function BingoSquareCell({
 
   return (
     <div className={sharedClassName}>
+      {completed && (
+        <Check
+          aria-hidden="true"
+          className="text-success-foreground absolute top-1 right-1 h-3.5 w-3.5 sm:h-4 sm:w-4"
+        />
+      )}
       <button
         type="button"
         className="flex w-full flex-1 flex-col items-center justify-center gap-0.5 disabled:cursor-wait disabled:opacity-70"
