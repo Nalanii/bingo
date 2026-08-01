@@ -22,7 +22,7 @@ export default async function Home() {
       <section className="z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-12 px-6 py-16 md:grid-cols-2 md:py-24">
         <div className="flex flex-col items-start gap-6 text-left">
           <span className="inline-flex items-center gap-2 rounded-full border-2 border-border bg-card px-4 py-1.5 text-sm font-bold">
-            🎉 goal &amp; event bingo, made fun
+            <span aria-hidden="true">🎉</span> goal &amp; event bingo, made fun
           </span>
           <h1 className="font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
             Turn your goals into a{" "}

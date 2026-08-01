@@ -46,7 +46,17 @@ export function CardSettingsStep({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{locked ? "Edit card ✏️" : "Build a new card 🎲"}</CardTitle>
+        <CardTitle>
+          {locked ? (
+            <>
+              Edit card <span aria-hidden="true">✏️</span>
+            </>
+          ) : (
+            <>
+              Build a new card <span aria-hidden="true">🎲</span>
+            </>
+          )}
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">

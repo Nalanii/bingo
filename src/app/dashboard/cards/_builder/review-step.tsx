@@ -64,7 +64,8 @@ export function ReviewStep({
     <Card>
       <CardHeader>
         <CardTitle>
-          {mode === "edit" ? "Review your changes 🎉" : "Review your card 🎉"}
+          {mode === "edit" ? "Review your changes" : "Review your card"}{" "}
+          <span aria-hidden="true">🎉</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

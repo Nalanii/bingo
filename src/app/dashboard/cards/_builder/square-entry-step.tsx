@@ -81,7 +81,9 @@ export function SquareEntryStep({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Fill in your squares 📝</CardTitle>
+        <CardTitle>
+          Fill in your squares <span aria-hidden="true">📝</span>
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {squares.map((square, index) => (

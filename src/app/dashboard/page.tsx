@@ -36,7 +36,7 @@ export default async function DashboardPage() {
       {cards.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
-            <span className="text-5xl">🎲</span>
+            <span aria-hidden="true" className="text-5xl">🎲</span>
             <div>
               <CardTitle>No cards yet</CardTitle>
               <p className="mt-1 text-muted-foreground">

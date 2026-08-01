@@ -13,7 +13,10 @@ const CELLS = [
 /** Decorative 3×3 bingo card shown on the landing page. */
 export function MiniBingoPreview() {
   return (
-    <div className="w-full max-w-sm rotate-2 rounded-[var(--radius-lg)] border-2 border-border bg-card p-4 shadow-[0_10px_0_0_rgba(0,0,0,0.08)]">
+    <div
+      aria-hidden="true"
+      className="w-full max-w-sm rotate-2 rounded-[var(--radius-lg)] border-2 border-border bg-card p-4 shadow-[0_10px_0_0_rgba(0,0,0,0.08)]"
+    >
       <p className="mb-3 text-center font-display text-lg font-bold">
         My 2026 Card
       </p>
