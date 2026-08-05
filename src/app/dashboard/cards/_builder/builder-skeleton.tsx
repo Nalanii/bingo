@@ -13,29 +13,29 @@ export function BuilderSkeleton() {
         Loading…
       </p>
       <div aria-hidden="true" className="flex flex-col gap-6">
-        <div className="h-4 w-32 animate-pulse rounded-[var(--radius-sm)] bg-muted" />
+        <div className="bg-muted h-4 w-32 animate-pulse rounded-[var(--radius-sm)]" />
         <Card>
           <CardHeader>
-            <div className="h-6 w-48 animate-pulse rounded-[var(--radius-sm)] bg-muted" />
+            <div className="bg-muted h-6 w-48 animate-pulse rounded-[var(--radius-sm)]" />
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
             <div className="flex flex-col gap-2">
-              <div className="h-4 w-24 animate-pulse rounded-[var(--radius-sm)] bg-muted" />
-              <div className="h-11 w-full animate-pulse rounded-[var(--radius-sm)] bg-muted" />
+              <div className="bg-muted h-4 w-24 animate-pulse rounded-[var(--radius-sm)]" />
+              <div className="bg-muted h-11 w-full animate-pulse rounded-[var(--radius-sm)]" />
             </div>
             <div className="flex flex-col gap-2">
-              <div className="h-4 w-20 animate-pulse rounded-[var(--radius-sm)] bg-muted" />
-              <div className="h-11 w-full animate-pulse rounded-full bg-muted" />
+              <div className="bg-muted h-4 w-20 animate-pulse rounded-[var(--radius-sm)]" />
+              <div className="bg-muted h-11 w-full animate-pulse rounded-full" />
             </div>
             <div className="flex items-center justify-between gap-4">
-              <div className="h-4 w-40 animate-pulse rounded-[var(--radius-sm)] bg-muted" />
-              <div className="h-6 w-11 animate-pulse rounded-full bg-muted" />
+              <div className="bg-muted h-4 w-40 animate-pulse rounded-[var(--radius-sm)]" />
+              <div className="bg-muted h-6 w-11 animate-pulse rounded-full" />
             </div>
             <div className="flex flex-col gap-2">
-              <div className="h-4 w-28 animate-pulse rounded-[var(--radius-sm)] bg-muted" />
-              <div className="h-11 w-full animate-pulse rounded-full bg-muted" />
+              <div className="bg-muted h-4 w-28 animate-pulse rounded-[var(--radius-sm)]" />
+              <div className="bg-muted h-11 w-full animate-pulse rounded-full" />
             </div>
-            <div className="h-11 w-24 animate-pulse self-end rounded-full bg-muted" />
+            <div className="bg-muted h-11 w-24 animate-pulse self-end rounded-full" />
           </CardContent>
         </Card>
       </div>

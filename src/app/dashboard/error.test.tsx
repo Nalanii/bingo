@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
 import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import { usePathname } from "next/navigation";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { usePathname, useRouter } from "next/navigation";
 import DashboardError from "./error";
+
+const mockRefresh = vi.fn();
 
 vi.mock("next/navigation", () => ({
   usePathname: vi.fn(),
+  useRouter: vi.fn(),
 }));
 
 vi.mock("next/link", () => ({
@@ -15,6 +18,16 @@ vi.mock("next/link", () => ({
 }));
 
 describe("DashboardError", () => {
+  beforeEach(() => {
+    vi.mocked(useRouter).mockReturnValue({
+      refresh: mockRefresh,
+    } as unknown as ReturnType<typeof useRouter>);
+  });
+
+  afterEach(() => {
+    mockRefresh.mockClear();
+  });
+
   it("shows generic copy, never the raw error message", () => {
     vi.mocked(usePathname).mockReturnValue("/dashboard/cards/new");
     render(
@@ -30,12 +43,30 @@ describe("DashboardError", () => {
     expect(screen.queryByText(/permission-denied/)).not.toBeInTheDocument();
   });
 
-  it("calls reset() when Try again is clicked", () => {
+  it("logs the raw error to the console instead of rendering it", () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(usePathname).mockReturnValue("/dashboard/cards/new");
+    const error = new Error("permission-denied: missing composite index");
+    render(<DashboardError error={error} reset={vi.fn()} />);
+
+    expect(consoleError).toHaveBeenCalledWith("Dashboard error boundary caught:", error);
+    consoleError.mockRestore();
+  });
+
+  it("hides the decorative emoji from screen readers", () => {
+    vi.mocked(usePathname).mockReturnValue("/dashboard/cards/new");
+    render(<DashboardError error={new Error("boom")} reset={vi.fn()} />);
+
+    expect(screen.getByText("😵")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("refreshes the router and calls reset() when Try again is clicked", () => {
     vi.mocked(usePathname).mockReturnValue("/dashboard/cards/new");
     const reset = vi.fn();
     render(<DashboardError error={new Error("boom")} reset={reset} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(mockRefresh).toHaveBeenCalledTimes(1);
     expect(reset).toHaveBeenCalledTimes(1);
   });
 
@@ -51,8 +82,6 @@ describe("DashboardError", () => {
     vi.mocked(usePathname).mockReturnValue("/dashboard");
     render(<DashboardError error={new Error("boom")} reset={vi.fn()} />);
 
-    expect(
-      screen.queryByRole("link", { name: "Back to your cards" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Back to your cards" })).not.toBeInTheDocument();
   });
 });
