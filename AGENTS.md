@@ -56,6 +56,8 @@ Run and make sure these pass:
 ```bash
 npm run lint
 npm run typecheck
+npm test
+npm run test:e2e
 npm run build
 ```
 
