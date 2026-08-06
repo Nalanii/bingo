@@ -314,6 +314,26 @@ function BingoSquareCell({
   onProgressChange: (square: Square, direction: "increment" | "decrement") => void;
   onViewHistory: (square: Square) => void;
 }) {
+  const label = square?.label;
+  const labelRef = useRef<HTMLSpanElement>(null);
+  const [isLabelTruncated, setIsLabelTruncated] = useState(false);
+
+  useEffect(() => {
+    const element = labelRef.current;
+    if (!element) return;
+
+    function checkTruncation() {
+      if (!element) return;
+      setIsLabelTruncated(element.scrollHeight > element.clientHeight + 1);
+    }
+
+    checkTruncation();
+
+    const observer = new ResizeObserver(checkTruncation);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [label]);
+
   if (!square) {
     // Defensive: a slot without a matching square (shouldn't happen per the
     // data model, but a card must never crash rendering over it).
@@ -322,7 +342,7 @@ function BingoSquareCell({
     );
   }
 
-  const { isFreeSpace, kind, label, goal } = square;
+  const { isFreeSpace, kind, goal } = square;
   const row = Math.floor(square.position / gridSize) + 1;
   const col = (square.position % gridSize) + 1;
   const isCheckInteractive = kind === "CHECK" && !isFreeSpace;
@@ -355,16 +375,19 @@ function BingoSquareCell({
   const renderLabel = (clampClass: string, textSizeClass: string) => (
     <div className="relative w-full">
       <span
+        ref={labelRef}
         className={cn(clampClass, textSizeClass, "leading-tight font-medium break-words")}
       >
         {label}
       </span>
-      <span
-        aria-hidden="true"
-        className="border-border bg-card text-card-foreground pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-max max-w-[9rem] -translate-x-1/2 scale-95 rounded-[var(--radius-sm)] border px-2 py-1 text-center text-[0.65rem] leading-snug font-medium opacity-0 shadow-lg transition-all duration-150 group-hover:scale-100 group-hover:opacity-100 group-hover:delay-[700ms] group-focus-within:scale-100 group-focus-within:opacity-100 sm:text-xs"
-      >
-        {label}
-      </span>
+      {isLabelTruncated && (
+        <span
+          aria-hidden="true"
+          className="border-border bg-card text-card-foreground pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-max max-w-[9rem] -translate-x-1/2 scale-95 rounded-[var(--radius-sm)] border px-2 py-1 text-center text-[0.65rem] leading-snug font-medium opacity-0 shadow-lg transition-all duration-150 group-hover:scale-100 group-hover:opacity-100 group-hover:delay-[700ms] group-focus-within:scale-100 group-focus-within:opacity-100 sm:text-xs"
+        >
+          {label}
+        </span>
+      )}
     </div>
   );
 
