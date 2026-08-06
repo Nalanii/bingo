@@ -100,6 +100,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run lint`            | ESLint                                  |
 | `npm run typecheck`       | TypeScript, no emit                     |
 | `npm run format`          | Prettier write                          |
+| `npm test`                | Unit tests (Vitest)                     |
+| `npm run test:e2e`        | End-to-end tests (Playwright)           |
 
 ## Project structure
 
@@ -116,6 +118,7 @@ src/
     auth.ts                   # getUser() helper (verifies the session cookie)
 firestore.rules               # denies all direct client access
 firebase.json                 # points the Firebase CLI at firestore.rules
+e2e/                           # Playwright end-to-end specs
 docs/
   ARCHITECTURE.md           # how it fits together + the data model
 ```
