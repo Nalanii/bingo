@@ -347,7 +347,7 @@ function BingoSquareCell({
         <span className="text-lg sm:text-xl" aria-hidden="true">
           ⭐
         </span>
-        <span className="text-[0.6rem] font-bold tracking-wide uppercase sm:text-xs">Free</span>
+        <span className="text-[0.6rem] font-bold tracking-wide uppercase sm:text-xs">Free space</span>
       </div>
     );
   }

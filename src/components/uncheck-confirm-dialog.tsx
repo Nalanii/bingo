@@ -27,14 +27,14 @@ export function UncheckConfirmDialog({ label, onCancel, onConfirm }: UncheckConf
         ref={dialogRef}
         role="alertdialog"
         aria-modal="true"
-        aria-label={`Undo ${label}?`}
+        aria-label={`Undo completion of ${label}?`}
         tabIndex={-1}
         className="border-border bg-card text-card-foreground mx-4 flex w-full max-w-sm flex-col gap-3 rounded-[var(--radius-sm)] border-2 p-4 focus-visible:outline-none"
         onClick={(event) => event.stopPropagation()}
       >
         <p className="text-sm">
-          Undo <span className="font-bold">{label}</span>? This permanently deletes its completion
-          history.
+          Undo completion of <span className="font-bold">{label}</span>? This permanently deletes
+          its completion history.
         </p>
         <div className="flex justify-end gap-2">
           <button

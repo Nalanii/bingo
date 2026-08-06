@@ -3,7 +3,7 @@ const CELLS = [
   { label: "📚 12 books", done: false },
   { label: "🏃 5k", done: true },
   { label: "🎸 New song", done: false },
-  { label: "⭐ FREE", done: true, free: true },
+  { label: "⭐ FREE SPACE", done: true, free: true },
   { label: "🍜 Cook 10", done: false },
   { label: "💧 Hydrate", done: true },
   { label: "🎨 Paint", done: false },
