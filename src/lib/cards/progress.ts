@@ -61,15 +61,18 @@ export function computeCardProgress(
 
   const doneByPosition = new Map<number, boolean>();
   let completedCount = 0;
+  let totalCount = 0;
   for (const square of squares) {
     const done = isSquareDone(square, countsBySquareId[square.id] ?? 0);
-    if (done) completedCount += 1;
     doneByPosition.set(square.position, done);
+    if (square.isFreeSpace) continue;
+    if (done) completedCount += 1;
+    totalCount += 1;
   }
 
   return {
     completedCount,
-    totalCount: squares.length,
+    totalCount,
     hasBingo: getBingoLines(gridSize, doneByPosition).length > 0,
   };
 }
