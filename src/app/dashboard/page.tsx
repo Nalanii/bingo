@@ -88,35 +88,31 @@ export default async function DashboardPage() {
                           style={{ width: `${percent}%` }}
                         />
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {progress.completedCount}/{progress.totalCount} done
-                      </p>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs text-muted-foreground">
+                          {progress.completedCount}/{progress.totalCount} done
+                        </p>
+                        <Link
+                          href={`/dashboard/cards/${card.id}/edit`}
+                          aria-label={`Edit ${card.name}`}
+                          className="-my-2 inline-flex min-h-11 items-center px-2 py-2 text-xs text-muted-foreground hover:underline"
+                        >
+                          Edit
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/dashboard/cards/${card.id}/play`}
-                      aria-label={`Play ${card.name}`}
-                      className={buttonVariants({
-                        variant: "primary",
-                        size: "sm",
-                        className: "flex-1",
-                      })}
-                    >
-                      Play
-                    </Link>
-                    <Link
-                      href={`/dashboard/cards/${card.id}/edit`}
-                      aria-label={`Edit ${card.name}`}
-                      className={buttonVariants({
-                        variant: "outline",
-                        size: "sm",
-                        className: "flex-1",
-                      })}
-                    >
-                      Edit
-                    </Link>
-                  </div>
+                  <Link
+                    href={`/dashboard/cards/${card.id}/play`}
+                    aria-label={`Play ${card.name}`}
+                    className={buttonVariants({
+                      variant: "primary",
+                      size: "md",
+                      className: "w-full",
+                    })}
+                  >
+                    Play
+                  </Link>
                 </CardContent>
               </Card>
             );
