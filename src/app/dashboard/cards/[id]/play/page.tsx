@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { getCard } from "@/lib/firestore/cards";
@@ -52,7 +52,14 @@ export default async function PlayCardPage({
         >
           <ArrowLeft aria-hidden="true" className="size-5" />
         </Link>
-        <h1 className="font-display text-2xl font-bold sm:text-3xl">{card.name}</h1>
+        <h1 className="flex-1 font-display text-2xl font-bold sm:text-3xl">{card.name}</h1>
+        <Link
+          href={`/dashboard/cards/${card.id}/edit`}
+          aria-label={`Edit ${card.name}`}
+          className="shrink-0 rounded-[var(--radius-sm)] p-1 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Pencil aria-hidden="true" className="size-5" />
+        </Link>
       </div>
       <BingoGrid
         cardId={card.id}
