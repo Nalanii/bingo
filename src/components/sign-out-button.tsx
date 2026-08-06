@@ -32,9 +32,9 @@ export function SignOutButton() {
       variant="ghost"
       size="sm"
       onClick={handleSignOut}
-      disabled={loading}
+      loading={loading}
     >
-      Sign out
+      {loading ? "Signing out…" : "Sign out"}
     </Button>
   );
 }

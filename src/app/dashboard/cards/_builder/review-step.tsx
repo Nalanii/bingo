@@ -101,7 +101,7 @@ export function ReviewStep({
           >
             ← Back
           </Button>
-          <Button onClick={handleSave} disabled={isPending} className="self-end">
+          <Button onClick={handleSave} loading={isPending} className="self-end">
             {isPending
               ? "Saving…"
               : mode === "edit"

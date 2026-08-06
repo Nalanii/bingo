@@ -50,7 +50,7 @@ export function DeleteCardButton({
         <Button
           type="button"
           variant="destructive"
-          disabled={isPending}
+          loading={isPending}
           onClick={handleDelete}
         >
           {isPending ? "Deleting…" : "Yes, delete it"}

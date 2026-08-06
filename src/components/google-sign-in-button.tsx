@@ -42,8 +42,8 @@ export function GoogleSignInButton({
   }
 
   return (
-    <Button variant="outline" size={size} onClick={signIn} disabled={loading}>
-      <GoogleGlyph />
+    <Button variant="outline" size={size} onClick={signIn} loading={loading}>
+      {loading ? null : <GoogleGlyph />}
       {loading ? "Signing in…" : label}
     </Button>
   );
