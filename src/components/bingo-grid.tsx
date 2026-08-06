@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Square } from "@/lib/firestore/cards";
@@ -81,13 +81,18 @@ export function BingoGrid({
   const [blackoutTrigger, setBlackoutTrigger] = useState(0);
   const previousBlackoutRef = useRef<boolean | null>(null);
 
-  useEffect(() => {
+  // Lifted to render time (not just inside the effect below) so the persistent
+  // "BINGO!" indicator can reflect current state, not just newly-completed lines.
+  const currentLines = useMemo(() => {
     const doneByPosition = new Map<number, boolean>();
     for (const square of squares) {
       doneByPosition.set(square.position, isSquareDone(square, completedSquareIds, counts));
     }
+    return getBingoLines(gridSize, doneByPosition);
+  }, [squares, completedSquareIds, counts, gridSize]);
+  const hasBingo = currentLines.length > 0;
 
-    const currentLines = getBingoLines(gridSize, doneByPosition);
+  useEffect(() => {
     const currentLineKeys = new Set(currentLines.map((line) => `${line.type}-${line.index}`));
     const previousLineKeys = previousLineKeysRef.current;
     previousLineKeysRef.current = currentLineKeys;
@@ -114,7 +119,7 @@ export function BingoGrid({
       setNewLines(linesJustCompleted);
       setCelebrationTrigger((prev) => prev + 1);
     }
-  }, [completedSquareIds, counts, squares, gridSize]);
+  }, [currentLines, completedSquareIds, counts, squares]);
 
   /** Refetches a square's completion history and updates its displayed latest date. */
   async function refreshLatestCompletionDate(squareId: string) {
@@ -235,6 +240,14 @@ export function BingoGrid({
       {celebrationTrigger > 0 && <BingoCelebration key={celebrationTrigger} lines={newLines} />}
       {blackoutTrigger > 0 && (
         <BingoCelebration key={`blackout-${blackoutTrigger}`} variant="blackout" />
+      )}
+      {hasBingo && (
+        <span
+          role="status"
+          className="mx-auto rounded-full bg-accent px-3 py-1 text-xs font-bold tracking-wide text-accent-foreground uppercase shadow-sm"
+        >
+          Bingo!
+        </span>
       )}
       <div
         className="mx-auto grid w-full max-w-xl gap-1.5 sm:gap-2 md:gap-3"
