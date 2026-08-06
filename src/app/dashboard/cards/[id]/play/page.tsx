@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { getCard } from "@/lib/firestore/cards";
@@ -42,11 +43,17 @@ export default async function PlayCardPage({
   );
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-6">
-      <Link href="/dashboard" className="text-sm text-muted-foreground">
-        ← Back to your cards
-      </Link>
-      <h1 className="font-display text-3xl font-bold">{card.name}</h1>
+    <div className="mx-auto flex max-w-xl flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <Link
+          href="/dashboard"
+          aria-label="Back to your cards"
+          className="shrink-0 rounded-[var(--radius-sm)] p-1 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft aria-hidden="true" className="size-5" />
+        </Link>
+        <h1 className="font-display text-2xl font-bold sm:text-3xl">{card.name}</h1>
+      </div>
       <BingoGrid
         cardId={card.id}
         gridSize={card.gridSize}

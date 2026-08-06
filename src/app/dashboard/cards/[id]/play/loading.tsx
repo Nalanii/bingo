@@ -8,13 +8,15 @@ const SKELETON_GRID_SIZE = 5;
  */
 export default function PlayCardLoading() {
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-6">
+    <div className="mx-auto flex max-w-xl flex-col gap-3">
       <p role="status" className="sr-only">
         Loading your card…
       </p>
-      <div aria-hidden="true" className="flex flex-col gap-6">
-        <div className="bg-muted h-4 w-32 animate-pulse rounded-[var(--radius-sm)]" />
-        <div className="bg-muted h-9 w-2/3 animate-pulse rounded-[var(--radius-sm)]" />
+      <div aria-hidden="true" className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <div className="bg-muted size-7 animate-pulse rounded-[var(--radius-sm)]" />
+          <div className="bg-muted h-8 w-2/3 animate-pulse rounded-[var(--radius-sm)]" />
+        </div>
         <div
           className="mx-auto grid w-full max-w-xl gap-1.5 sm:gap-2 md:gap-3"
           style={{
