@@ -123,6 +123,41 @@ body {
   }
 }
 
+/* Full-screen radial flash behind the blackout badge — makes blackout read
+   as a bigger deal than a line celebration at a glance. */
+@keyframes blackout-flash {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Shimmer sweep across the blackout badge, layered on top of the wobble. */
+@keyframes blackout-shimmer {
+  0% {
+    background-position: -150% 0;
+  }
+  100% {
+    background-position: 250% 0;
+  }
+}
+
+/* Slow glow pulse for the persistent blackout badge on the board. */
+@keyframes blackout-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-accent) 0%, transparent);
+  }
+}
+
 .font-display {
   font-family: var(--font-display), var(--font-body), sans-serif;
 }

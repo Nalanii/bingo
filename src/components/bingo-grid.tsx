@@ -92,14 +92,18 @@ export function BingoGrid({
   }, [squares, completedSquareIds, counts, gridSize]);
   const hasBingo = currentLines.length > 0;
 
+  // Lifted to render time (like currentLines above) so the persistent blackout
+  // badge can reflect current state, not just newly-completed blackouts.
+  const isBlackout = useMemo(
+    () => squares.length > 0 && squares.every((square) => isSquareDone(square, completedSquareIds, counts)),
+    [squares, completedSquareIds, counts],
+  );
+
   useEffect(() => {
     const currentLineKeys = new Set(currentLines.map((line) => `${line.type}-${line.index}`));
     const previousLineKeys = previousLineKeysRef.current;
     previousLineKeysRef.current = currentLineKeys;
 
-    const isBlackout = squares.length > 0 && squares.every((square) =>
-      isSquareDone(square, completedSquareIds, counts),
-    );
     const previousBlackout = previousBlackoutRef.current;
     previousBlackoutRef.current = isBlackout;
 
@@ -119,7 +123,7 @@ export function BingoGrid({
       setNewLines(linesJustCompleted);
       setCelebrationTrigger((prev) => prev + 1);
     }
-  }, [currentLines, completedSquareIds, counts, squares]);
+  }, [currentLines, isBlackout]);
 
   /** Refetches a square's completion history and updates its displayed latest date. */
   async function refreshLatestCompletionDate(squareId: string) {
@@ -241,13 +245,26 @@ export function BingoGrid({
       {blackoutTrigger > 0 && (
         <BingoCelebration key={`blackout-${blackoutTrigger}`} variant="blackout" />
       )}
-      {hasBingo && (
-        <span
-          role="status"
-          className="mx-auto rounded-full bg-accent px-3 py-1 text-xs font-bold tracking-wide text-accent-foreground uppercase shadow-sm"
-        >
-          Bingo!
-        </span>
+      {(hasBingo || isBlackout) && (
+        <div className="mx-auto flex items-center gap-1.5">
+          {hasBingo && (
+            <span
+              role="status"
+              className="rounded-full bg-accent px-3 py-1 text-xs font-bold tracking-wide text-accent-foreground uppercase shadow-sm"
+            >
+              Bingo!
+            </span>
+          )}
+          {isBlackout && (
+            <span
+              role="status"
+              className="rounded-full border-2 border-primary bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_100%] px-3 py-1 text-xs font-bold tracking-wide text-primary-foreground uppercase shadow-sm"
+              style={{ animation: "blackout-glow 2s ease-in-out infinite" }}
+            >
+              Blackout!
+            </span>
+          )}
+        </div>
       )}
       <div
         className="mx-auto grid w-full max-w-xl gap-1.5 sm:gap-2 md:gap-3"

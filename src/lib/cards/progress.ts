@@ -5,6 +5,7 @@ export interface CardProgress {
   completedCount: number;
   totalCount: number;
   hasBingo: boolean;
+  isBlackout: boolean;
 }
 
 /** A square is done when it's the free space or its completion count reaches its goal (CHECK squares have goal 1). */
@@ -74,5 +75,6 @@ export function computeCardProgress(
     completedCount,
     totalCount,
     hasBingo: getBingoLines(gridSize, doneByPosition).length > 0,
+    isBlackout: totalCount > 0 && completedCount === totalCount,
   };
 }

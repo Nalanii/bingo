@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { BingoLine } from "@/lib/cards/progress";
 import { buildLineSrText } from "@/lib/cards/celebration-text";
+import { cn } from "@/lib/utils";
 
 const CONFETTI_COLORS = [
   "var(--color-primary)",
@@ -81,14 +82,21 @@ export function BingoCelebration({ variant = "line", lines }: BingoCelebrationPr
   if (!visible) return null;
 
   const srText = variant === "blackout" ? config.srText : buildLineSrText(lines ?? [], config.srText);
+  const isBlackout = variant === "blackout";
 
   return (
     <>
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
+        {isBlackout && (
+          <div
+            className="absolute inset-0 bg-gradient-to-br from-accent/40 via-primary/25 to-transparent"
+            style={{ animation: "blackout-flash 0.8s ease-out forwards" }}
+          />
+        )}
         {pieces.map((piece) => (
           <span
             key={piece.id}
-            className="absolute top-0 h-2.5 w-2.5 rounded-sm"
+            className={cn("absolute top-0 rounded-sm", isBlackout ? "h-3 w-3" : "h-2.5 w-2.5")}
             style={{
               left: `${piece.left}%`,
               backgroundColor: piece.color,
@@ -99,8 +107,17 @@ export function BingoCelebration({ variant = "line", lines }: BingoCelebrationPr
         ))}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2">
           <span
-            className="font-display border-accent bg-accent text-accent-foreground inline-block rounded-[var(--radius-sm)] border-2 px-4 py-2 text-lg font-bold tracking-wide uppercase shadow-lg"
-            style={{ animation: "wobble 0.4s ease-in-out 2" }}
+            className={cn(
+              "font-display inline-block rounded-[var(--radius-sm)] border-2 font-bold tracking-wide uppercase shadow-lg",
+              isBlackout
+                ? "border-primary bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_100%] px-6 py-3 text-2xl text-primary-foreground"
+                : "border-accent bg-accent text-accent-foreground px-4 py-2 text-lg",
+            )}
+            style={{
+              animation: isBlackout
+                ? "wobble 0.4s ease-in-out 2, blackout-shimmer 1.2s linear 2"
+                : "wobble 0.4s ease-in-out 2",
+            }}
           >
             {config.badgeText}
           </span>

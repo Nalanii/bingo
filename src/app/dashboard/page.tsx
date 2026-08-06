@@ -63,11 +63,18 @@ export default async function DashboardPage() {
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between gap-2">
                       <CardTitle className="min-w-0 truncate">{card.name}</CardTitle>
-                      {progress.hasBingo && (
-                        <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground">
-                          BINGO!
-                        </span>
-                      )}
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {progress.hasBingo && (
+                          <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground">
+                            BINGO!
+                          </span>
+                        )}
+                        {progress.isBlackout && (
+                          <span className="rounded-full border-2 border-primary bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_100%] px-2 py-0.5 text-xs font-bold text-primary-foreground">
+                            BLACKOUT!
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {card.gridSize}×{card.gridSize} · {card.squareCount} squares
