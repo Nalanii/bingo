@@ -13,11 +13,33 @@ const body = Nunito({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://bingo-psi-liart.vercel.app";
+const title = "Bingoal — goal & event bingo";
+const description =
+  "Build fun, funky bingo cards for your goals and events. Check things off, count things up, and chase that BINGO.";
+
 export const metadata: Metadata = {
-  title: "Bingoal — goal & event bingo",
-  description:
-    "Build fun, funky bingo cards for your goals and events. Check things off, count things up, and chase that BINGO.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: title,
+    template: "%s — Bingoal",
+  },
+  description,
   applicationName: "Bingoal",
+  manifest: "/manifest.webmanifest",
+  openGraph: {
+    title,
+    description,
+    url: "/",
+    siteName: "Bingoal",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+  },
 };
 
 export const viewport: Viewport = {
