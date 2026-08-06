@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { CardSettings } from "./types";
 
 const NAME_MAX_LENGTH = 128;
@@ -82,31 +83,47 @@ export function CardSettingsStep({
 
         <div className="flex flex-col gap-2">
           <span className="text-sm font-semibold">Grid size</span>
-          <SegmentedControl
-            aria-label="Grid size"
-            value={String(gridSize)}
-            onChange={(value) => setGridSize(value === "3" ? 3 : 5)}
-            disabled={locked}
-            aria-describedby={locked ? "settings-locked-note" : undefined}
-            options={[
-              { value: "3", label: "3×3" },
-              { value: "5", label: "5×5" },
-            ]}
-          />
+          <Tooltip
+            label={
+              locked
+                ? "Grid size can't be changed after a card is created"
+                : undefined
+            }
+          >
+            <SegmentedControl
+              aria-label="Grid size"
+              value={String(gridSize)}
+              onChange={(value) => setGridSize(value === "3" ? 3 : 5)}
+              disabled={locked}
+              aria-describedby={locked ? "settings-locked-note" : undefined}
+              options={[
+                { value: "3", label: "3×3" },
+                { value: "5", label: "5×5" },
+              ]}
+            />
+          </Tooltip>
         </div>
 
         <div className="flex items-center justify-between gap-4">
           <label htmlFor="free-space" className="text-sm font-semibold">
             Free space in the center
           </label>
-          <Switch
-            id="free-space"
-            checked={hasFreeSpace}
-            onChange={setHasFreeSpace}
-            disabled={locked}
-            aria-label="Free space in the center"
-            aria-describedby={locked ? "settings-locked-note" : undefined}
-          />
+          <Tooltip
+            label={
+              locked
+                ? "Free space can't be changed after a card is created"
+                : undefined
+            }
+          >
+            <Switch
+              id="free-space"
+              checked={hasFreeSpace}
+              onChange={setHasFreeSpace}
+              disabled={locked}
+              aria-label="Free space in the center"
+              aria-describedby={locked ? "settings-locked-note" : undefined}
+            />
+          </Tooltip>
         </div>
 
         {locked ? (

@@ -48,7 +48,7 @@ export function SegmentedControl({
       aria-disabled={disabled || undefined}
       className={cn(
         "inline-flex rounded-full border-2 border-border bg-muted p-1",
-        disabled && "opacity-50",
+        disabled && "cursor-not-allowed opacity-50",
         className,
       )}
     >
@@ -72,7 +72,7 @@ export function SegmentedControl({
               selected
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground",
-              disabled && "cursor-not-allowed",
+              disabled && "pointer-events-none cursor-not-allowed",
             )}
           >
             {option.label}
