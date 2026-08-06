@@ -5,6 +5,7 @@
    Light + dark. Tweak here to restyle the whole app.
 --------------------------------------------------------------------------- */
 :root {
+  color-scheme: light dark; /* let native form controls (e.g. date picker icon) render for the active theme */
   --background: #fff9f0; /* warm cream */
   --foreground: #211e2e; /* ink */
   --card: #ffffff;
