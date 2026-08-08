@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { BingoGridPreview } from "@/components/bingo-grid-preview";
 import { freeSpacePosition } from "@/lib/cards/grid";
 import type { PositionedSquareDraft } from "./positions";
 import type { CardSettings, SaveCardResult } from "./types";
@@ -71,22 +72,11 @@ export function ReviewStep({
       <CardContent className="flex flex-col gap-4">
         <p className="text-muted-foreground">
           Card &ldquo;{settings.name}&rdquo; · {settings.gridSize}×
-          {settings.gridSize} · free space{" "}
+          {settings.gridSize} · Free space{" "}
           {settings.hasFreeSpace ? "on" : "off"} ·{" "}
-          {settings.layout === "RANDOM" ? "random" : "set"} order
+          {settings.layout === "RANDOM" ? "Random" : "Set"} order
         </p>
-        <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
-          {orderedSquares.map((square) => (
-            <li key={square.position}>
-              Slot {square.position + 1}: {square.label} ·{" "}
-              {square.isFreeSpace
-                ? "pre-complete"
-                : square.kind === "COUNTER"
-                  ? `counter to ${square.goal}`
-                  : "check"}
-            </li>
-          ))}
-        </ul>
+        <BingoGridPreview gridSize={settings.gridSize} squares={orderedSquares} />
         {error ? (
           <p role="alert" className="text-destructive text-sm">
             {error}
