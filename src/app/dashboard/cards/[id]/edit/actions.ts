@@ -9,7 +9,11 @@ import {
   type Square,
 } from "@/lib/firestore/cards";
 import type { PositionedSquareDraft } from "../../_builder/positions";
-import type { CardSettings, SaveCardResult } from "../../_builder/types";
+import {
+  validateSquareKindAndGoal,
+  type CardSettings,
+  type SaveCardResult,
+} from "../../_builder/types";
 
 /** Validates a builder draft and persists it as an update to an existing card. */
 export async function updateCard(
@@ -17,12 +21,11 @@ export async function updateCard(
   settings: CardSettings,
   squares: PositionedSquareDraft[],
 ): Promise<SaveCardResult> {
-  const user = await getUser();
+  const [user, card] = await Promise.all([getUser(), getCard(cardId)]);
   if (!user) {
     return { ok: false, error: "You need to sign in to save a card." };
   }
 
-  const card = await getCard(cardId);
   if (!card || card.ownerId !== user.uid) {
     return { ok: false, error: "Card not found." };
   }
@@ -57,14 +60,9 @@ export async function updateCard(
     }
     seenPositions.add(square.position);
 
-    if (square.kind !== "CHECK" && square.kind !== "COUNTER") {
-      return { ok: false, error: "Invalid square type." };
-    }
-    if (square.kind === "CHECK" && square.goal !== 1) {
-      return { ok: false, error: "Check squares must have a goal of 1." };
-    }
-    if (square.kind === "COUNTER" && (!Number.isInteger(square.goal) || square.goal < 2)) {
-      return { ok: false, error: "Counter squares need a goal of at least 2." };
+    const kindError = validateSquareKindAndGoal(square);
+    if (kindError) {
+      return { ok: false, error: kindError };
     }
   }
 
@@ -107,12 +105,11 @@ export async function updateCard(
 
 /** Deletes a card the current user owns. */
 export async function deleteCard(cardId: string): Promise<SaveCardResult> {
-  const user = await getUser();
+  const [user, card] = await Promise.all([getUser(), getCard(cardId)]);
   if (!user) {
     return { ok: false, error: "You need to sign in to delete a card." };
   }
 
-  const card = await getCard(cardId);
   if (!card || card.ownerId !== user.uid) {
     return { ok: false, error: "Card not found." };
   }

@@ -1,4 +1,4 @@
-import type { Timestamp } from "firebase-admin/firestore";
+import type { QueryDocumentSnapshot, Timestamp } from "firebase-admin/firestore";
 import { db } from "@/lib/firebase/admin";
 
 export interface Completion {
@@ -7,18 +7,44 @@ export interface Completion {
   completedAt: Date;
 }
 
+function toCompletion(doc: QueryDocumentSnapshot): Completion {
+  const data = doc.data() as { squareId: string; completedAt: Timestamp };
+  return {
+    id: doc.id,
+    squareId: data.squareId,
+    completedAt: data.completedAt.toDate(),
+  };
+}
+
+/**
+ * Reads completion docs for a single square, sorted in memory (rather than
+ * via `.orderBy`) so this doesn't need a composite Firestore index — a
+ * square's completion count is small.
+ */
+async function getSortedCompletionDocs(
+  cardId: string,
+  squareId: string,
+): Promise<QueryDocumentSnapshot[]> {
+  const completions = db.collection("cards").doc(cardId).collection("completions");
+  const existing = await completions.where("squareId", "==", squareId).get();
+  return existing.docs.sort(
+    (a, b) =>
+      (b.data().completedAt as Timestamp).toMillis() -
+      (a.data().completedAt as Timestamp).toMillis(),
+  );
+}
+
 /** Reads all completion docs for a card. */
 export async function getCompletions(cardId: string): Promise<Completion[]> {
   const snapshot = await db.collection("cards").doc(cardId).collection("completions").get();
+  return snapshot.docs.map(toCompletion);
+}
 
-  return snapshot.docs.map((doc) => {
-    const data = doc.data() as { squareId: string; completedAt: Timestamp };
-    return {
-      id: doc.id,
-      squareId: data.squareId,
-      completedAt: data.completedAt.toDate(),
-    };
-  });
+/** Counts a single square's completions without downloading the docs. */
+export async function getCompletionCount(cardId: string, squareId: string): Promise<number> {
+  const completions = db.collection("cards").doc(cardId).collection("completions");
+  const count = await completions.where("squareId", "==", squareId).count().get();
+  return count.data().count;
 }
 
 /** Toggles a square's completion: deletes an existing completion or creates a new one. Returns the resulting completed state. */
@@ -39,21 +65,12 @@ export async function toggleCompletion(cardId: string, squareId: string): Promis
 export async function addCompletion(cardId: string, squareId: string): Promise<number> {
   const completions = db.collection("cards").doc(cardId).collection("completions");
   await completions.add({ squareId, completedAt: new Date() });
-  const count = await completions.where("squareId", "==", squareId).count().get();
-  return count.data().count;
+  return getCompletionCount(cardId, squareId);
 }
 
 /** Removes the most recent completion for a counter square. Returns the resulting completion count. */
 export async function removeLatestCompletion(cardId: string, squareId: string): Promise<number> {
-  const completions = db.collection("cards").doc(cardId).collection("completions");
-  // Sorted in memory (rather than via `.orderBy`) so this doesn't need a
-  // composite Firestore index; a square's completion count is small.
-  const existing = await completions.where("squareId", "==", squareId).get();
-  const sorted = existing.docs.sort(
-    (a, b) =>
-      (b.data().completedAt as Timestamp).toMillis() -
-      (a.data().completedAt as Timestamp).toMillis(),
-  );
+  const sorted = await getSortedCompletionDocs(cardId, squareId);
 
   if (sorted.length > 0) {
     await sorted[0].ref.delete();
@@ -67,24 +84,8 @@ export async function getCompletionsForSquare(
   cardId: string,
   squareId: string,
 ): Promise<Completion[]> {
-  const completions = db.collection("cards").doc(cardId).collection("completions");
-  // Sorted in memory (rather than via `.orderBy`) so this doesn't need a
-  // composite Firestore index; a square's completion count is small.
-  const existing = await completions.where("squareId", "==", squareId).get();
-  const sorted = existing.docs.sort(
-    (a, b) =>
-      (b.data().completedAt as Timestamp).toMillis() -
-      (a.data().completedAt as Timestamp).toMillis(),
-  );
-
-  return sorted.map((doc) => {
-    const data = doc.data() as { squareId: string; completedAt: Timestamp };
-    return {
-      id: doc.id,
-      squareId: data.squareId,
-      completedAt: data.completedAt.toDate(),
-    };
-  });
+  const sorted = await getSortedCompletionDocs(cardId, squareId);
+  return sorted.map(toCompletion);
 }
 
 /** Updates the completedAt date of a single completion doc. */

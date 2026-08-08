@@ -4,7 +4,7 @@ import { getUser } from "@/lib/auth";
 import { getCard, type Square } from "@/lib/firestore/cards";
 import {
   addCompletion,
-  getCompletions,
+  getCompletionCount,
   getCompletionsForSquare,
   removeLatestCompletion,
   toggleCompletion,
@@ -25,17 +25,21 @@ export type CompletionHistoryResult =
 
 export type UpdateCompletionDateResult = { ok: true } | { ok: false; error: string };
 
-/** Toggles a CHECK square's completion for a card the current user owns. */
-export async function toggleSquareCompletion(
+/**
+ * Resolves and validates a square on a card the current user owns, or an
+ * error. `getUser` and `getCard` don't depend on each other, so they run
+ * concurrently rather than as two sequential round-trips.
+ */
+async function getOwnedSquare(
   cardId: string,
   squareId: string,
-): Promise<ToggleCompletionResult> {
-  const user = await getUser();
+): Promise<{ ok: true; square: Square } | { ok: false; error: string }> {
+  const [user, card] = await Promise.all([getUser(), getCard(cardId)]);
+
   if (!user) {
     return { ok: false, error: "You need to sign in to update a card." };
   }
 
-  const card = await getCard(cardId);
   if (!card || card.ownerId !== user.uid) {
     return { ok: false, error: "Card not found." };
   }
@@ -45,7 +49,18 @@ export async function toggleSquareCompletion(
     return { ok: false, error: "Square not found." };
   }
 
-  if (square.kind !== "CHECK") {
+  return { ok: true, square };
+}
+
+/** Toggles a CHECK square's completion for a card the current user owns. */
+export async function toggleSquareCompletion(
+  cardId: string,
+  squareId: string,
+): Promise<ToggleCompletionResult> {
+  const resolved = await getOwnedSquare(cardId, squareId);
+  if (!resolved.ok) return resolved;
+
+  if (resolved.square.kind !== "CHECK") {
     return { ok: false, error: "Only check squares can be toggled this way." };
   }
 
@@ -63,26 +78,14 @@ async function getOwnedCounterSquare(
   cardId: string,
   squareId: string,
 ): Promise<{ ok: true; square: Square } | { ok: false; error: string }> {
-  const user = await getUser();
-  if (!user) {
-    return { ok: false, error: "You need to sign in to update a card." };
-  }
+  const resolved = await getOwnedSquare(cardId, squareId);
+  if (!resolved.ok) return resolved;
 
-  const card = await getCard(cardId);
-  if (!card || card.ownerId !== user.uid) {
-    return { ok: false, error: "Card not found." };
-  }
-
-  const square = card.squares.find((square) => square.id === squareId);
-  if (!square) {
-    return { ok: false, error: "Square not found." };
-  }
-
-  if (square.kind !== "COUNTER") {
+  if (resolved.square.kind !== "COUNTER") {
     return { ok: false, error: "Only counter squares can be incremented or decremented." };
   }
 
-  return { ok: true, square };
+  return resolved;
 }
 
 /** Logs a Completion for a COUNTER square, incrementing its progress. */
@@ -94,10 +97,7 @@ export async function incrementSquareProgress(
   if (!resolved.ok) return resolved;
 
   try {
-    const completions = await getCompletions(cardId);
-    const currentCount = completions.filter(
-      (completion) => completion.squareId === squareId,
-    ).length;
+    const currentCount = await getCompletionCount(cardId, squareId);
     if (currentCount >= resolved.square.goal) {
       return { ok: false, error: "Goal already reached." };
     }
@@ -119,10 +119,7 @@ export async function decrementSquareProgress(
   if (!resolved.ok) return resolved;
 
   try {
-    const completions = await getCompletions(cardId);
-    const currentCount = completions.filter(
-      (completion) => completion.squareId === squareId,
-    ).length;
+    const currentCount = await getCompletionCount(cardId, squareId);
     if (currentCount <= 0) {
       return { ok: false, error: "No progress to remove yet." };
     }
@@ -140,20 +137,8 @@ export async function getSquareCompletionHistory(
   cardId: string,
   squareId: string,
 ): Promise<CompletionHistoryResult> {
-  const user = await getUser();
-  if (!user) {
-    return { ok: false, error: "You need to sign in to update a card." };
-  }
-
-  const card = await getCard(cardId);
-  if (!card || card.ownerId !== user.uid) {
-    return { ok: false, error: "Card not found." };
-  }
-
-  const square = card.squares.find((square) => square.id === squareId);
-  if (!square) {
-    return { ok: false, error: "Square not found." };
-  }
+  const resolved = await getOwnedSquare(cardId, squareId);
+  if (!resolved.ok) return resolved;
 
   try {
     const completions = await getCompletionsForSquare(cardId, squareId);
@@ -175,20 +160,8 @@ export async function updateSquareCompletionDate(
   completionId: string,
   completedAt: string,
 ): Promise<UpdateCompletionDateResult> {
-  const user = await getUser();
-  if (!user) {
-    return { ok: false, error: "You need to sign in to update a card." };
-  }
-
-  const card = await getCard(cardId);
-  if (!card || card.ownerId !== user.uid) {
-    return { ok: false, error: "Card not found." };
-  }
-
-  const square = card.squares.find((square) => square.id === squareId);
-  if (!square) {
-    return { ok: false, error: "Square not found." };
-  }
+  const resolved = await getOwnedSquare(cardId, squareId);
+  if (!resolved.ok) return resolved;
 
   const date = new Date(completedAt);
   if (isNaN(date.getTime())) {

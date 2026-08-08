@@ -12,10 +12,9 @@ export default async function PlayCardPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user = await getUser();
+  const [user, card] = await Promise.all([getUser(), getCard(id)]);
   if (!user) redirect("/");
 
-  const card = await getCard(id);
   // notFound() for both "doesn't exist" and "not yours" so a guessed id
   // can't be used to confirm another user's card exists.
   if (!card || card.ownerId !== user.uid) notFound();

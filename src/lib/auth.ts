@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { adminAuth } from "@/lib/firebase/admin";
 
@@ -8,8 +9,14 @@ export interface SessionUser {
   avatarUrl: string | null;
 }
 
-/** Returns the currently authenticated user from the session cookie, or null. */
-export async function getUser(): Promise<SessionUser | null> {
+/**
+ * Returns the currently authenticated user from the session cookie, or null.
+ *
+ * Wrapped in React's `cache()` so multiple calls within the same request
+ * (e.g. a layout and the page it wraps) dedupe to a single
+ * `verifySessionCookie` round-trip instead of one each.
+ */
+export const getUser = cache(async (): Promise<SessionUser | null> => {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("session")?.value;
 
@@ -30,4 +37,4 @@ export async function getUser(): Promise<SessionUser | null> {
     console.error("getUser: session cookie verification failed", error);
     return null;
   }
-}
+});

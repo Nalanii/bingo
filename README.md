@@ -7,9 +7,10 @@ list — as a **3×3** or **5×5** grid. Fill each square with a one-and-done ch
 (_"visit a new country"_) or a counter goal (_"do 10 puzzles"_), then tick things
 off and chase that **BINGO**.
 
-> **Status:** early days. Auth, the data model, and a funky stub site are in
-> place. The card builder and play experience are the next milestones — see
-> the [GitHub Issues](../../issues) board.
+> **Status:** core loop is built and working — sign in, build a card, play it,
+> and get celebrated for a BINGO. Active development is now polish and new
+> features (animations, bigger grids, sharing) — see the
+> [GitHub Issues](../../issues) board.
 
 > _"Bingoal" is a working name and can change._
 
