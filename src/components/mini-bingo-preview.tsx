@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 const CELLS = [
   { label: "🌍 Trip", done: true },
   { label: "📚 12 books", done: false },
@@ -24,14 +26,14 @@ export function MiniBingoPreview() {
         {CELLS.map((c, i) => (
           <div
             key={i}
-            className={[
+            className={cn(
               "flex aspect-square items-center justify-center rounded-[var(--radius-md)] p-1 text-center text-xs font-bold",
               c.free
                 ? "bg-accent text-accent-foreground"
                 : c.done
                   ? "bg-success text-success-foreground"
                   : "border-2 border-border bg-muted text-muted-foreground",
-            ].join(" ")}
+            )}
           >
             {c.label}
           </div>
