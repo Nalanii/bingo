@@ -49,7 +49,9 @@ export function ReviewStep({
 
   // Sorted by position so RANDOM cards show their shuffled grid order, not
   // entry order.
-  const orderedSquares = allSquares.sort((a, b) => a.position - b.position);
+  const orderedSquares = [...allSquares].sort(
+    (a, b) => a.position - b.position,
+  );
 
   const handleSave = () => {
     setError(null);
