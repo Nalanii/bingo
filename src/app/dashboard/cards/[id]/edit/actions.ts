@@ -1,10 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { getUser } from "@/lib/auth";
+import { getOwnedCard } from "@/lib/cards/access";
 import {
   deleteCard as deleteCardDoc,
-  getCard,
   updateCard as updateCardDoc,
   type Square,
 } from "@/lib/firestore/cards";
@@ -21,14 +20,9 @@ export async function updateCard(
   settings: CardSettings,
   squares: PositionedSquareDraft[],
 ): Promise<SaveCardResult> {
-  const [user, card] = await Promise.all([getUser(), getCard(cardId)]);
-  if (!user) {
-    return { ok: false, error: "You need to sign in to save a card." };
-  }
-
-  if (!card || card.ownerId !== user.uid) {
-    return { ok: false, error: "Card not found." };
-  }
+  const resolved = await getOwnedCard(cardId);
+  if (!resolved.ok) return resolved;
+  const { card } = resolved;
 
   if (settings.layout !== "RANDOM" && settings.layout !== "SET") {
     return { ok: false, error: "Invalid layout." };
@@ -105,14 +99,8 @@ export async function updateCard(
 
 /** Deletes a card the current user owns. */
 export async function deleteCard(cardId: string): Promise<SaveCardResult> {
-  const [user, card] = await Promise.all([getUser(), getCard(cardId)]);
-  if (!user) {
-    return { ok: false, error: "You need to sign in to delete a card." };
-  }
-
-  if (!card || card.ownerId !== user.uid) {
-    return { ok: false, error: "Card not found." };
-  }
+  const resolved = await getOwnedCard(cardId);
+  if (!resolved.ok) return resolved;
 
   try {
     await deleteCardDoc(cardId);

@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { notFound, redirect } from "next/navigation";
-import { getUser } from "@/lib/auth";
+import { getOwnedCardOrNotFound } from "@/lib/cards/access";
 import { isValidGridSize } from "@/lib/cards/grid";
-import { getCard } from "@/lib/firestore/cards";
 import { CardBuilder } from "../../_builder/card-builder";
 import type { PositionedSquareDraft } from "../../_builder/positions";
 import type { CardSettings } from "../../_builder/types";
@@ -16,12 +14,7 @@ export default async function EditCardPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [user, card] = await Promise.all([getUser(), getCard(id)]);
-  if (!user) redirect("/");
-
-  // notFound() for both "doesn't exist" and "not yours" so a guessed id
-  // can't be used to confirm another user's card exists.
-  if (!card || card.ownerId !== user.uid) notFound();
+  const card = await getOwnedCardOrNotFound(id);
 
   const initialSettings: CardSettings = {
     name: card.name,

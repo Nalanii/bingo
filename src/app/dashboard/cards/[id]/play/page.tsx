@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Pencil } from "lucide-react";
-import { notFound, redirect } from "next/navigation";
-import { getUser } from "@/lib/auth";
+import { getOwnedCardOrNotFound } from "@/lib/cards/access";
 import { countCompletionsBySquare } from "@/lib/cards/progress";
-import { getCard } from "@/lib/firestore/cards";
 import { getCompletions } from "@/lib/firestore/completions";
 import { BingoGrid } from "@/components/bingo-grid";
 
@@ -13,12 +11,7 @@ export default async function PlayCardPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [user, card] = await Promise.all([getUser(), getCard(id)]);
-  if (!user) redirect("/");
-
-  // notFound() for both "doesn't exist" and "not yours" so a guessed id
-  // can't be used to confirm another user's card exists.
-  if (!card || card.ownerId !== user.uid) notFound();
+  const card = await getOwnedCardOrNotFound(id);
 
   const completions = await getCompletions(id);
   const checkSquareIds = new Set(
