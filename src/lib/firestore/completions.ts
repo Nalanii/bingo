@@ -21,7 +21,7 @@ function toCompletion(doc: QueryDocumentSnapshot): Completion {
  * via `.orderBy`) so this doesn't need a composite Firestore index — a
  * square's completion count is small.
  */
-async function getSortedCompletionDocs(
+export async function getSortedCompletionDocs(
   cardId: string,
   squareId: string,
 ): Promise<QueryDocumentSnapshot[]> {
@@ -61,17 +61,28 @@ export async function toggleCompletion(cardId: string, squareId: string): Promis
   return true;
 }
 
-/** Logs a new completion for a counter square. Returns the resulting completion count. */
-export async function addCompletion(cardId: string, squareId: string): Promise<number> {
+/**
+ * Logs a new completion for a counter square. Returns the resulting
+ * completion count, derived from `currentCount` rather than re-querying.
+ */
+export async function addCompletion(
+  cardId: string,
+  squareId: string,
+  currentCount: number,
+): Promise<number> {
   const completions = db.collection("cards").doc(cardId).collection("completions");
   await completions.add({ squareId, completedAt: new Date() });
-  return getCompletionCount(cardId, squareId);
+  return currentCount + 1;
 }
 
-/** Removes the most recent completion for a counter square. Returns the resulting completion count. */
-export async function removeLatestCompletion(cardId: string, squareId: string): Promise<number> {
-  const sorted = await getSortedCompletionDocs(cardId, squareId);
-
+/**
+ * Removes the most recent completion for a counter square, given the docs
+ * the caller already fetched via `getSortedCompletionDocs`. Returns the
+ * resulting completion count.
+ */
+export async function removeLatestCompletion(
+  sorted: QueryDocumentSnapshot[],
+): Promise<number> {
   if (sorted.length > 0) {
     await sorted[0].ref.delete();
   }

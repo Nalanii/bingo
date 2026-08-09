@@ -25,10 +25,10 @@ export async function POST(request: Request) {
   let decoded;
   let sessionCookie;
   try {
-    decoded = await adminAuth.verifyIdToken(idToken);
-    sessionCookie = await adminAuth.createSessionCookie(idToken, {
-      expiresIn: SESSION_EXPIRES_IN_MS,
-    });
+    [decoded, sessionCookie] = await Promise.all([
+      adminAuth.verifyIdToken(idToken),
+      adminAuth.createSessionCookie(idToken, { expiresIn: SESSION_EXPIRES_IN_MS }),
+    ]);
   } catch (error) {
     console.error("session route: failed to verify/exchange idToken", error);
     return NextResponse.json({ error: "Invalid or expired idToken" }, { status: 401 });

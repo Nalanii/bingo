@@ -6,6 +6,7 @@ import {
   addCompletion,
   getCompletionCount,
   getCompletionsForSquare,
+  getSortedCompletionDocs,
   removeLatestCompletion,
   toggleCompletion,
   updateCompletionDate,
@@ -102,7 +103,7 @@ export async function incrementSquareProgress(
       return { ok: false, error: "Goal already reached." };
     }
 
-    const count = await addCompletion(cardId, squareId);
+    const count = await addCompletion(cardId, squareId, currentCount);
     return { ok: true, count };
   } catch (error) {
     console.error("incrementSquareProgress: failed to add completion", error);
@@ -119,12 +120,12 @@ export async function decrementSquareProgress(
   if (!resolved.ok) return resolved;
 
   try {
-    const currentCount = await getCompletionCount(cardId, squareId);
-    if (currentCount <= 0) {
+    const sorted = await getSortedCompletionDocs(cardId, squareId);
+    if (sorted.length <= 0) {
       return { ok: false, error: "No progress to remove yet." };
     }
 
-    const count = await removeLatestCompletion(cardId, squareId);
+    const count = await removeLatestCompletion(sorted);
     return { ok: true, count };
   } catch (error) {
     console.error("decrementSquareProgress: failed to remove completion", error);
