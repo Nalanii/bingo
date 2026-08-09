@@ -8,6 +8,7 @@ import {
   type CompletionHistoryEntry,
 } from "@/app/dashboard/cards/[id]/play/actions";
 import { useDialogA11y } from "@/lib/use-dialog-a11y";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 interface CompletionHistoryModalProps {
   cardId: string;
@@ -286,39 +287,21 @@ export function CompletionHistoryModal({
       </div>
 
       {showDiscardConfirm && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
-          onClick={() => setShowDiscardConfirm(false)}
-        >
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            aria-label="Discard unsaved changes?"
-            className="border-border bg-card text-card-foreground mx-4 flex w-full max-w-sm flex-col gap-3 rounded-[var(--radius-sm)] border-2 p-4"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <p className="text-sm">
+        <ConfirmDialog
+          ariaLabel="Discard unsaved changes?"
+          message={
+            <>
               Discard unsaved changes to <span className="font-bold">{square.label}</span>
               &rsquo;s completion history?
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className="border-control-border bg-card text-card-foreground focus-visible:ring-ring focus-visible:ring-offset-background cursor-pointer rounded-[var(--radius-sm)] border px-3 py-1 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-                onClick={() => setShowDiscardConfirm(false)}
-              >
-                Keep editing
-              </button>
-              <button
-                type="button"
-                className="border-destructive bg-destructive text-destructive-foreground focus-visible:ring-ring focus-visible:ring-offset-background cursor-pointer rounded-[var(--radius-sm)] border px-3 py-1 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-                onClick={onClose}
-              >
-                Discard
-              </button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+          cancelLabel="Keep editing"
+          confirmLabel="Discard"
+          zIndexClassName="z-[60]"
+          manageFocus={false}
+          onCancel={() => setShowDiscardConfirm(false)}
+          onConfirm={onClose}
+        />
       )}
     </div>
   );

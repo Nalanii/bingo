@@ -13,7 +13,7 @@ import {
 } from "@/app/dashboard/cards/[id]/play/actions";
 import { CompletionHistoryModal } from "@/components/completion-history-modal";
 import { BingoCelebration } from "@/components/bingo-celebration";
-import { UncheckConfirmDialog } from "@/components/uncheck-confirm-dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Tooltip } from "@/components/ui/tooltip";
 
 interface BingoGridProps {
@@ -310,8 +310,15 @@ export function BingoGrid({
         />
       )}
       {squareToUncheck && (
-        <UncheckConfirmDialog
-          label={squareToUncheck.label}
+        <ConfirmDialog
+          ariaLabel={`Undo completion of ${squareToUncheck.label}?`}
+          message={
+            <>
+              Undo completion of <span className="font-bold">{squareToUncheck.label}</span>? This
+              permanently deletes its completion history.
+            </>
+          }
+          confirmLabel="Undo"
           onCancel={() => setSquareToUncheck(null)}
           onConfirm={() => {
             const square = squareToUncheck;
