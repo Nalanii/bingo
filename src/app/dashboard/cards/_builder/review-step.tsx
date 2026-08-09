@@ -57,7 +57,7 @@ export function ReviewStep({
     setError(null);
     startTransition(async () => {
       const result = await onSave(settings, squares);
-      if (!result.ok) {
+      if (result && !result.ok) {
         setError(result.error);
       }
     });

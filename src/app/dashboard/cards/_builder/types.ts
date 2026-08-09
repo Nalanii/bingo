@@ -13,7 +13,10 @@ export type SquareDraft = {
   goal: number;
 };
 
-export type SaveCardResult = { ok: true } | { ok: false; error: string };
+// Success is expressed by `redirect()` throwing, not by a return value — the
+// success arm here only ever completes via `void` when a caller doesn't
+// redirect (there currently is none, but the type stays honest about it).
+export type SaveCardResult = { ok: false; error: string } | void;
 
 /**
  * Validates a square's kind/goal pairing, shared between the create and

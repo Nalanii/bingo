@@ -17,7 +17,7 @@ export function DeleteCardButton({
     setError(null);
     startTransition(async () => {
       const result = await onDelete();
-      if (!result.ok) {
+      if (result && !result.ok) {
         setError(result.error);
       }
     });
