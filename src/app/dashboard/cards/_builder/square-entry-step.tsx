@@ -10,22 +10,17 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { squareCount } from "@/lib/cards/grid";
 import type { CardSettings, SquareDraft } from "./types";
 
 const LABEL_MAX_LENGTH = 128;
 const DEFAULT_GOAL = 2;
 
-function squareCount(settings: CardSettings): number {
-  return (
-    settings.gridSize * settings.gridSize - (settings.hasFreeSpace ? 1 : 0)
-  );
-}
-
 function seedSquares(
   settings: CardSettings,
   defaultValues: SquareDraft[],
 ): SquareDraft[] {
-  const count = squareCount(settings);
+  const count = squareCount(settings.gridSize, settings.hasFreeSpace);
   return Array.from({ length: count }, (_, index) => {
     const existing = defaultValues[index];
     return existing

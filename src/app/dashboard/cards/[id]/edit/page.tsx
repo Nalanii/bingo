@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
+import { isValidGridSize } from "@/lib/cards/grid";
 import { getCard } from "@/lib/firestore/cards";
 import { CardBuilder } from "../../_builder/card-builder";
 import type { PositionedSquareDraft } from "../../_builder/positions";
@@ -24,7 +25,7 @@ export default async function EditCardPage({
 
   const initialSettings: CardSettings = {
     name: card.name,
-    gridSize: card.gridSize === 3 ? 3 : 5,
+    gridSize: isValidGridSize(card.gridSize) ? card.gridSize : 5,
     hasFreeSpace: card.hasFreeSpace,
     layout: card.layout,
   };

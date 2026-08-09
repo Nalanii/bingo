@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
-import { freeSpacePosition } from "@/lib/cards/grid";
+import { freeSpacePosition, isValidGridSize, squareCount } from "@/lib/cards/grid";
 import { createCard, type Square } from "@/lib/firestore/cards";
 import type { PositionedSquareDraft } from "../_builder/positions";
 import { validateSquareKindAndGoal, type CardSettings, type SaveCardResult } from "../_builder/types";
@@ -17,7 +17,7 @@ export async function saveCard(
     return { ok: false, error: "You need to sign in to save a card." };
   }
 
-  if (settings.gridSize !== 3 && settings.gridSize !== 5) {
+  if (!isValidGridSize(settings.gridSize)) {
     return { ok: false, error: "Invalid grid size." };
   }
   if (settings.layout !== "RANDOM" && settings.layout !== "SET") {
@@ -31,7 +31,7 @@ export async function saveCard(
   const reservedPosition = settings.hasFreeSpace
     ? freeSpacePosition(settings.gridSize)
     : -1;
-  const expectedCount = total - (settings.hasFreeSpace ? 1 : 0);
+  const expectedCount = squareCount(settings.gridSize, settings.hasFreeSpace);
 
   if (squares.length !== expectedCount) {
     return { ok: false, error: "Square count doesn't match the grid size." };

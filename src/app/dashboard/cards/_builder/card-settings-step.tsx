@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip } from "@/components/ui/tooltip";
+import { isValidGridSize } from "@/lib/cards/grid";
 import type { CardSettings } from "./types";
 
 const NAME_MAX_LENGTH = 128;
@@ -93,7 +94,11 @@ export function CardSettingsStep({
             <SegmentedControl
               aria-label="Grid size"
               value={String(gridSize)}
-              onChange={(value) => setGridSize(value === "3" ? 3 : 5)}
+              onChange={(value) => {
+                // Parses a UI string value into one of the known grid sizes.
+                const parsed = Number(value);
+                setGridSize(isValidGridSize(parsed) ? parsed : 5);
+              }}
               disabled={locked}
               aria-describedby={locked ? "settings-locked-note" : undefined}
               options={[

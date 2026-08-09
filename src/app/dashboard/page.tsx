@@ -78,7 +78,7 @@ export default async function DashboardPage() {
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {card.gridSize}×{card.gridSize} · {card.squareCount} squares
+                      {card.gridSize}×{card.gridSize} · {card.squares.length} squares
                       {card.hasFreeSpace && (
                         <Tooltip label="Has a free space">
                           <span

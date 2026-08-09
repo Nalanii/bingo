@@ -49,16 +49,21 @@ export function getBingoLines(gridSize: number, doneByPosition: Map<number, bool
   return lines;
 }
 
+/** Tallies how many completions each square has. */
+export function countCompletionsBySquare(completions: Completion[]): Record<string, number> {
+  return completions.reduce<Record<string, number>>((counts, completion) => {
+    counts[completion.squareId] = (counts[completion.squareId] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
 /** Computes how many of a card's squares are done and whether a bingo line is complete. */
 export function computeCardProgress(
   gridSize: number,
   squares: Square[],
   completions: Completion[],
 ): CardProgress {
-  const countsBySquareId = completions.reduce<Record<string, number>>((counts, completion) => {
-    counts[completion.squareId] = (counts[completion.squareId] ?? 0) + 1;
-    return counts;
-  }, {});
+  const countsBySquareId = countCompletionsBySquare(completions);
 
   const doneByPosition = new Map<number, boolean>();
   let completedCount = 0;

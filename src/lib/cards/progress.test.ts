@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { getBingoLines } from "./progress";
+import type { Completion } from "@/lib/firestore/completions";
+import { countCompletionsBySquare, getBingoLines } from "./progress";
+
+function completion(squareId: string): Completion {
+  return { id: `completion-${squareId}-${Math.random()}`, squareId, completedAt: new Date() };
+}
 
 function doneMap(positions: number[]): Map<number, boolean> {
   return new Map(positions.map((position) => [position, true]));
@@ -54,5 +59,21 @@ describe("getBingoLines", () => {
   it("treats missing positions as not done", () => {
     const done = new Map<number, boolean>(); // empty map, 3x3 grid
     expect(getBingoLines(3, done)).toEqual([]);
+  });
+});
+
+describe("countCompletionsBySquare", () => {
+  it("returns an empty object for no completions", () => {
+    expect(countCompletionsBySquare([])).toEqual({});
+  });
+
+  it("tallies one completion per square", () => {
+    const completions = [completion("a"), completion("b")];
+    expect(countCompletionsBySquare(completions)).toEqual({ a: 1, b: 1 });
+  });
+
+  it("counts repeated completions for the same square", () => {
+    const completions = [completion("a"), completion("a"), completion("b"), completion("a")];
+    expect(countCompletionsBySquare(completions)).toEqual({ a: 3, b: 1 });
   });
 });

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
+import { countCompletionsBySquare } from "@/lib/cards/progress";
 import { getCard } from "@/lib/firestore/cards";
 import { getCompletions } from "@/lib/firestore/completions";
 import { BingoGrid } from "@/components/bingo-grid";
@@ -26,10 +27,7 @@ export default async function PlayCardPage({
   const completedSquareIds = completions
     .filter((completion) => checkSquareIds.has(completion.squareId))
     .map((completion) => completion.squareId);
-  const initialCounts = completions.reduce<Record<string, number>>((counts, completion) => {
-    counts[completion.squareId] = (counts[completion.squareId] ?? 0) + 1;
-    return counts;
-  }, {});
+  const initialCounts = countCompletionsBySquare(completions);
   const initialLatestCompletionDates = completions.reduce<Record<string, string>>(
     (latest, completion) => {
       const existing = latest[completion.squareId];
