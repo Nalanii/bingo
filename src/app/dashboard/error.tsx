@@ -9,7 +9,7 @@ import { useErrorBoundaryRetry } from "@/lib/use-error-boundary-retry";
 /**
  * Error boundary for the whole `/dashboard` segment — Next.js mounts this
  * automatically for the card list and every nested route (builder
- * create/edit, play grid), so an unhandled Firestore error anywhere in
+ * create/edit, card grid), so an unhandled Firestore error anywhere in
  * those pages lands here instead of Next's generic error page.
  *
  * See `useErrorBoundaryRetry` for the retry/logging behavior shared with

@@ -5,7 +5,7 @@ import { countCompletionsBySquare } from "@/lib/cards/progress";
 import { getCompletions } from "@/lib/firestore/completions";
 import { BingoGrid } from "@/components/bingo-grid";
 
-export default async function PlayCardPage({
+export default async function CardGridPage({
   params,
 }: {
   params: Promise<{ id: string }>;

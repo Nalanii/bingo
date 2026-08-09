@@ -6,7 +6,7 @@ const SKELETON_GRID_SIZE = 5;
  * known until the card loads, so this shows a 5×5 grid as a representative
  * default shape.
  */
-export default function PlayCardLoading() {
+export default function CardGridLoading() {
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-3">
       <p role="status" className="sr-only">
