@@ -6,6 +6,7 @@ import { getCompletions } from "@/lib/firestore/completions";
 import { computeCardProgress } from "@/lib/cards/progress";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { Tooltip } from "@/components/ui/tooltip";
 
 export default async function DashboardPage() {
   const user = await getUser();
@@ -79,13 +80,14 @@ export default async function DashboardPage() {
                     <p className="text-sm text-muted-foreground">
                       {card.gridSize}×{card.gridSize} · {card.squareCount} squares
                       {card.hasFreeSpace && (
-                        <span
-                          className="ml-1.5 inline-flex items-center gap-0.5"
-                          aria-label="Has a free space"
-                          title="Has a free space"
-                        >
-                          <span aria-hidden="true">⭐</span>
-                        </span>
+                        <Tooltip label="Has a free space">
+                          <span
+                            className="ml-1.5 inline-flex items-center gap-0.5"
+                            aria-label="Has a free space"
+                          >
+                            <span aria-hidden="true">⭐</span>
+                          </span>
+                        </Tooltip>
                       )}
                     </p>
                     <div className="flex flex-col gap-1">

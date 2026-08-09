@@ -14,6 +14,7 @@ import {
 import { CompletionHistoryModal } from "@/components/completion-history-modal";
 import { BingoCelebration } from "@/components/bingo-celebration";
 import { UncheckConfirmDialog } from "@/components/uncheck-confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 
 interface BingoGridProps {
   cardId: string;
@@ -345,24 +346,31 @@ function BingoSquareCell({
   onViewHistory: (square: Square) => void;
 }) {
   const label = square?.label;
-  const labelRef = useRef<HTMLSpanElement>(null);
+  // A state setter (not a plain useRef) doubling as the ref callback: the
+  // shared Tooltip renders its wrapped children directly (no DOM node) when
+  // `isLabelTruncated` is false and wraps them in a real `<span>` once it's
+  // true, which changes this element's type across that render and forces
+  // React to unmount/remount it. A useRef+useEffect(deps: [label]) pair
+  // wouldn't reattach the ResizeObserver to that new node since `label`
+  // itself didn't change; tracking the node in state re-runs the effect below
+  // whenever it does.
+  const [labelElement, setLabelElement] = useState<HTMLSpanElement | null>(null);
   const [isLabelTruncated, setIsLabelTruncated] = useState(false);
 
   useEffect(() => {
-    const element = labelRef.current;
-    if (!element) return;
+    if (!labelElement) return;
 
     function checkTruncation() {
-      if (!element) return;
-      setIsLabelTruncated(element.scrollHeight > element.clientHeight + 1);
+      if (!labelElement) return;
+      setIsLabelTruncated(labelElement.scrollHeight > labelElement.clientHeight + 1);
     }
 
     checkTruncation();
 
     const observer = new ResizeObserver(checkTruncation);
-    observer.observe(element);
+    observer.observe(labelElement);
     return () => observer.disconnect();
-  }, [label]);
+  }, [labelElement, label]);
 
   if (!square) {
     // Defensive: a slot without a matching square (shouldn't happen per the
@@ -403,22 +411,14 @@ function BingoSquareCell({
   }
 
   const renderLabel = (clampClass: string, textSizeClass: string) => (
-    <div className="relative w-full">
+    <Tooltip label={isLabelTruncated ? label : undefined} className="block w-full">
       <span
-        ref={labelRef}
+        ref={setLabelElement}
         className={cn(clampClass, textSizeClass, "leading-tight font-medium break-words")}
       >
         {label}
       </span>
-      {isLabelTruncated && (
-        <span
-          aria-hidden="true"
-          className="border-border bg-card text-card-foreground pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-max max-w-[9rem] -translate-x-1/2 scale-95 rounded-[var(--radius-sm)] border px-2 py-1 text-center text-[0.65rem] leading-snug font-medium opacity-0 shadow-lg transition-all duration-150 group-hover:scale-100 group-hover:opacity-100 group-hover:delay-[700ms] group-focus-within:scale-100 group-focus-within:opacity-100 sm:text-xs"
-        >
-          {label}
-        </span>
-      )}
-    </div>
+    </Tooltip>
   );
 
   const historyDateButton = (label: string, date: string) => (
