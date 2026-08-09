@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useTransition } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { useErrorBoundaryRetry } from "@/lib/use-error-boundary-retry";
 
 /**
  * Error boundary for the whole `/dashboard` segment — Next.js mounts this
@@ -12,15 +12,8 @@ import { Card, CardContent, CardTitle } from "@/components/ui/card";
  * create/edit, play grid), so an unhandled Firestore error anywhere in
  * those pages lands here instead of Next's generic error page.
  *
- * Never renders the raw `error.message` (it may contain Firestore/internal
- * details); it's only logged to the console.
- *
- * Retrying calls `router.refresh()` alongside `reset()`: Next's `reset()`
- * alone only clears the boundary's local error state and re-renders the
- * same already-errored Server Component payload — it does not re-fetch.
- * `router.refresh()` invalidates the Router Cache and re-requests the
- * segment from the server, which `reset()` then has a chance to render
- * successfully.
+ * See `useErrorBoundaryRetry` for the retry/logging behavior shared with
+ * the root `error.tsx`.
  */
 export default function DashboardError({
   error,
@@ -30,19 +23,11 @@ export default function DashboardError({
   reset: () => void;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const [isRetrying, startRetry] = useTransition();
-
-  useEffect(() => {
-    console.error("Dashboard error boundary caught:", error);
-  }, [error]);
-
-  function handleRetry() {
-    startRetry(() => {
-      router.refresh();
-      reset();
-    });
-  }
+  const { isRetrying, handleRetry } = useErrorBoundaryRetry(
+    error,
+    reset,
+    "Dashboard error boundary",
+  );
 
   return (
     <Card className="border-dashed">
