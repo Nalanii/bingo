@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { NextResponse } from "next/server";
-import { BingoGlyph } from "@/lib/cards/bingo-mark";
+import { BingoBadge, BingoGlyph, loadCardFonts } from "@/lib/cards/bingo-mark";
 
 export const dynamic = "force-static";
 
@@ -10,10 +10,7 @@ export function generateStaticParams() {
   return Array.from(VALID_SIZES, (size) => ({ size: String(size) }));
 }
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ size: string }> },
-) {
+export async function GET(_request: Request, { params }: { params: Promise<{ size: string }> }) {
   const { size: sizeParam } = await params;
   const px = Number(sizeParam);
   if (!VALID_SIZES.has(px)) {
@@ -21,18 +18,18 @@ export async function GET(
   }
 
   return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          background: "#7c4dff",
-        }}
-      >
-        <BingoGlyph size={px} />
-      </div>
-    ),
-    { width: px, height: px },
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        background: "#171325",
+      }}
+    >
+      <BingoGlyph size={px} background="#171325" />
+      <BingoBadge size={px} />
+    </div>,
+    { width: px, height: px, fonts: await loadCardFonts() },
   );
 }
