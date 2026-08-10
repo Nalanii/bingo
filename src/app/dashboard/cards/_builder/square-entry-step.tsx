@@ -84,7 +84,8 @@ export function SquareEntryStep({
         {squares.map((square, index) => (
           <div
             key={index}
-            className="flex flex-col gap-2 border-b border-border pb-4 last:border-b-0 last:pb-0"
+            className="flex flex-col gap-2 border-b border-border pb-4 last:border-b-0 last:pb-0 [animation:slide-up-fade_200ms_ease-out_backwards]"
+            style={{ animationDelay: `${Math.min(index, 10) * 30}ms` }}
           >
             <span className="text-sm font-semibold">Square {index + 1}</span>
             <Input
