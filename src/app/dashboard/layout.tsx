@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getUser } from "@/lib/auth";
 import { SignOutButton } from "@/components/sign-out-button";
+import { PageTransition } from "@/components/page-transition";
 
 export default async function DashboardLayout({
   children,
@@ -30,7 +31,9 @@ export default async function DashboardLayout({
           </div>
         </nav>
       </header>
-      <main id="main-content" className="mx-auto w-full max-w-5xl flex-1 px-4 py-5">{children}</main>
+      <main id="main-content" className="mx-auto w-full max-w-5xl flex-1 px-4 py-5">
+        <PageTransition>{children}</PageTransition>
+      </main>
     </div>
   );
 }
