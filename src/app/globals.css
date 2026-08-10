@@ -250,6 +250,20 @@ body {
   }
 }
 
+/* Brief scale-up "pop" played once on the square itself the instant a
+   CHECK square is marked done or a COUNTER square reaches its goal. */
+@keyframes square-complete-bounce {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 .font-display {
   font-family: var(--font-display), var(--font-body), sans-serif;
 }

@@ -370,6 +370,17 @@ function BingoSquareCell({
   onViewHistory: (square: Square) => void;
 }) {
   const label = square?.label;
+  const isDone = completed || (square?.kind === "COUNTER" && count >= square.goal);
+  const previousDoneRef = useRef(isDone);
+  const [justCompleted, setJustCompleted] = useState(false);
+
+  useEffect(() => {
+    if (isDone && !previousDoneRef.current) {
+      setJustCompleted(true);
+    }
+    previousDoneRef.current = isDone;
+  }, [isDone]);
+
   // A state setter (not a plain useRef) doubling as the ref callback: the
   // shared Tooltip renders its wrapped children directly (no DOM node) when
   // `isLabelTruncated` is false and wraps them in a real `<span>` once it's
@@ -464,7 +475,10 @@ function BingoSquareCell({
 
   if (isCounter) {
     return (
-      <div className={sharedClassName}>
+      <div
+        className={cn(sharedClassName, justCompleted && "[animation:square-complete-bounce_300ms_ease-out]")}
+        onAnimationEnd={() => setJustCompleted(false)}
+      >
         {goalReached && (
           <Check
             aria-hidden="true"
@@ -511,7 +525,10 @@ function BingoSquareCell({
   }
 
   return (
-    <div className={sharedClassName}>
+    <div
+      className={cn(sharedClassName, justCompleted && "[animation:square-complete-bounce_300ms_ease-out]")}
+      onAnimationEnd={() => setJustCompleted(false)}
+    >
       {completed && (
         <Check
           aria-hidden="true"
