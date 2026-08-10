@@ -22,6 +22,21 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
   };
 }
 
+/**
+ * Alpha-composites `foregroundHex` over `backgroundHex` at `alpha` (0–1) and
+ * returns the resulting flat `#rrggbb` color — i.e. what a Tailwind
+ * `bg-{color}/{opacity}` utility actually paints when nothing opaque sits
+ * between the element and `backgroundHex`. Lets contrast tests reason about
+ * semi-transparent utility classes as concrete colors.
+ */
+export function mixColors(foregroundHex: string, backgroundHex: string, alpha: number): string {
+  const fg = hexToRgb(foregroundHex);
+  const bg = hexToRgb(backgroundHex);
+  const channel = (f: number, b: number) => Math.round(f * alpha + b * (1 - alpha));
+  const toHex = (value: number) => value.toString(16).padStart(2, "0");
+  return `#${toHex(channel(fg.r, bg.r))}${toHex(channel(fg.g, bg.g))}${toHex(channel(fg.b, bg.b))}`;
+}
+
 function channelLuminance(channel: number): number {
   const normalized = channel / 255;
   return normalized <= 0.03928 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contrastRatio } from "./color-contrast";
+import { contrastRatio, mixColors } from "./color-contrast";
 
 describe("contrastRatio", () => {
   it("returns 21:1 for pure black on pure white (the maximum possible ratio)", () => {
@@ -26,5 +26,25 @@ describe("contrastRatio", () => {
 
   it("matches this app's known-passing pair: --secondary bg vs white text is ~4.81:1", () => {
     expect(contrastRatio("#7c4dff", "#ffffff")).toBeCloseTo(4.81, 1);
+  });
+});
+
+describe("mixColors", () => {
+  it("returns the foreground color untouched at full alpha", () => {
+    expect(mixColors("#ffffff", "#000000", 1)).toBe("#ffffff");
+  });
+
+  it("returns the background color untouched at zero alpha", () => {
+    expect(mixColors("#ffffff", "#000000", 0)).toBe("#000000");
+  });
+
+  it("matches a hand-computed blend: primary at 10% over this app's light background", () => {
+    // --primary (#e60053) at 10% alpha over --background (#fff9f0), light mode.
+    expect(mixColors("#e60053", "#fff9f0", 0.1)).toBe("#fde0e0");
+  });
+
+  it("matches a hand-computed blend: primary at 10% over this app's dark background", () => {
+    // --primary (#ff6aa2) at 10% alpha over --background (#171325), dark mode.
+    expect(mixColors("#ff6aa2", "#171325", 0.1)).toBe("#2e1c32");
   });
 });

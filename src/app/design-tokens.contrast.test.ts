@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { contrastRatio } from "../lib/color-contrast";
+import { contrastRatio, mixColors } from "../lib/color-contrast";
 
 const CSS_PATH = fileURLToPath(new URL("./globals.css", import.meta.url));
 const css = readFileSync(CSS_PATH, "utf-8");
@@ -98,5 +98,45 @@ describe("design token contrast (dark mode)", () => {
     expect(contrastRatio(DARK["primary-on-surface"], DARK.background)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(DARK["success-on-surface"], DARK.background)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(DARK["accent-on-surface"], DARK.background)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+// The play view's incomplete-square tints (src/components/bingo-grid.tsx)
+// render as bg-{color}/{opacity} directly on the square, with nothing
+// opaque beneath but the page's --background — these tests blend the same
+// way Tailwind does at paint time and check the result against the label
+// text color, so a future token edit that breaks readability fails here
+// instead of silently shipping.
+describe("incomplete square tint contrast (light mode)", () => {
+  it("primary/10 tint meets 4.5:1 for card-foreground text", () => {
+    const blended = mixColors(LIGHT.primary, LIGHT.background, 0.1);
+    expect(contrastRatio(blended, LIGHT["card-foreground"])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("secondary/10 tint meets 4.5:1 for card-foreground text", () => {
+    const blended = mixColors(LIGHT.secondary, LIGHT.background, 0.1);
+    expect(contrastRatio(blended, LIGHT["card-foreground"])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("accent/15 tint meets 4.5:1 for card-foreground text", () => {
+    const blended = mixColors(LIGHT.accent, LIGHT.background, 0.15);
+    expect(contrastRatio(blended, LIGHT["card-foreground"])).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe("incomplete square tint contrast (dark mode)", () => {
+  it("primary/10 tint meets 4.5:1 for card-foreground text", () => {
+    const blended = mixColors(DARK.primary, DARK.background, 0.1);
+    expect(contrastRatio(blended, DARK["card-foreground"])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("secondary/10 tint meets 4.5:1 for card-foreground text", () => {
+    const blended = mixColors(DARK.secondary, DARK.background, 0.1);
+    expect(contrastRatio(blended, DARK["card-foreground"])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("accent/15 tint meets 4.5:1 for card-foreground text", () => {
+    const blended = mixColors(DARK.accent, DARK.background, 0.15);
+    expect(contrastRatio(blended, DARK["card-foreground"])).toBeGreaterThanOrEqual(4.5);
   });
 });
