@@ -475,7 +475,7 @@ function BingoSquareCell({
         <div className="flex items-center gap-1.5">
           <button
             type="button"
-            className="text-sm leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-disabled:cursor-wait aria-disabled:opacity-70 disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
+            className="text-sm leading-none transition-transform duration-150 hover:-translate-y-0.5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-disabled:cursor-wait aria-disabled:opacity-70 disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
             aria-label={`Row ${row} of ${gridSize}, column ${col} of ${gridSize}: Decrease progress on ${label}`}
             aria-disabled={pending}
             disabled={count <= 0}
@@ -488,7 +488,7 @@ function BingoSquareCell({
           </span>
           <button
             type="button"
-            className="text-sm leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-disabled:cursor-wait aria-disabled:opacity-70 disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
+            className="text-sm leading-none transition-transform duration-150 hover:-translate-y-0.5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-disabled:cursor-wait aria-disabled:opacity-70 disabled:cursor-not-allowed disabled:opacity-40 sm:text-base"
             aria-label={`Row ${row} of ${gridSize}, column ${col} of ${gridSize}: Increase progress on ${label}`}
             aria-disabled={pending}
             disabled={count >= goal}
@@ -520,7 +520,7 @@ function BingoSquareCell({
       )}
       <button
         type="button"
-        className="flex w-full flex-1 flex-col items-center justify-center gap-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-disabled:cursor-wait aria-disabled:opacity-70"
+        className="flex w-full flex-1 flex-col items-center justify-center gap-0.5 cursor-pointer transition-transform duration-150 hover:-translate-y-0.5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-disabled:cursor-wait aria-disabled:opacity-70"
         aria-pressed={completed}
         aria-label={`Row ${row} of ${gridSize}, column ${col} of ${gridSize}: ${label} — ${completed ? "completed" : "not completed"}, tap to toggle`}
         aria-disabled={pending}
