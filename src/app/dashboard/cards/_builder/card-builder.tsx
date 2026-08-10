@@ -53,61 +53,67 @@ export function CardBuilder({
   // defaultValues-seeded local state will go stale.
   if (step === 3) {
     return (
-      <ReviewStep
-        mode={mode}
-        settings={settings}
-        squares={positionedSquares}
-        onBack={() => setStep(2)}
-        onSave={onSave}
-      />
+      <div key={step} className="[animation:slide-up-fade_200ms_ease-out]">
+        <ReviewStep
+          mode={mode}
+          settings={settings}
+          squares={positionedSquares}
+          onBack={() => setStep(2)}
+          onSave={onSave}
+        />
+      </div>
     );
   }
 
   if (step === 2) {
     return (
-      <SquareEntryStep
-        settings={settings}
-        defaultValues={squares}
-        onComplete={(nextSquares) => {
-          setSquares(nextSquares);
-          // Positions are assigned once here, when the card's contents are
-          // finalized, so a RANDOM card's layout stays put through review
-          // (and later, once persisted, on every future visit). In edit mode,
-          // grid size and free space are locked, so the square count never
-          // changes — re-attach each square to its original position instead
-          // of reshuffling, but only when the layout hasn't changed; if the
-          // user flipped RANDOM/SET during the edit, fall through to
-          // assignPositions so the new layout actually takes effect.
-          if (mode === "edit" && !initialSquares) {
-            throw new Error(
-              "CardBuilder: mode is 'edit' but initialSquares was not provided",
+      <div key={step} className="[animation:slide-up-fade_200ms_ease-out]">
+        <SquareEntryStep
+          settings={settings}
+          defaultValues={squares}
+          onComplete={(nextSquares) => {
+            setSquares(nextSquares);
+            // Positions are assigned once here, when the card's contents are
+            // finalized, so a RANDOM card's layout stays put through review
+            // (and later, once persisted, on every future visit). In edit mode,
+            // grid size and free space are locked, so the square count never
+            // changes — re-attach each square to its original position instead
+            // of reshuffling, but only when the layout hasn't changed; if the
+            // user flipped RANDOM/SET during the edit, fall through to
+            // assignPositions so the new layout actually takes effect.
+            if (mode === "edit" && !initialSquares) {
+              throw new Error(
+                "CardBuilder: mode is 'edit' but initialSquares was not provided",
+              );
+            }
+            const layoutUnchanged =
+              mode === "edit" && settings.layout === initialSettings?.layout;
+            setPositionedSquares(
+              layoutUnchanged && initialSquares
+                ? attachExistingPositions(nextSquares, initialSquares)
+                : assignPositions(nextSquares, settings),
             );
-          }
-          const layoutUnchanged =
-            mode === "edit" && settings.layout === initialSettings?.layout;
-          setPositionedSquares(
-            layoutUnchanged && initialSquares
-              ? attachExistingPositions(nextSquares, initialSquares)
-              : assignPositions(nextSquares, settings),
-          );
-          setStep(3);
-        }}
-        onBack={(nextSquares) => {
-          setSquares(nextSquares);
-          setStep(1);
-        }}
-      />
+            setStep(3);
+          }}
+          onBack={(nextSquares) => {
+            setSquares(nextSquares);
+            setStep(1);
+          }}
+        />
+      </div>
     );
   }
 
   return (
-    <CardSettingsStep
-      mode={mode}
-      defaultValues={settings}
-      onComplete={(nextSettings) => {
-        setSettings(nextSettings);
-        setStep(2);
-      }}
-    />
+    <div key={step} className="[animation:slide-up-fade_200ms_ease-out]">
+      <CardSettingsStep
+        mode={mode}
+        defaultValues={settings}
+        onComplete={(nextSettings) => {
+          setSettings(nextSettings);
+          setStep(2);
+        }}
+      />
+    </div>
   );
 }
