@@ -8,7 +8,9 @@ import {
   type CompletionHistoryEntry,
 } from "@/app/dashboard/cards/[id]/play/actions";
 import { useDialogA11y } from "@/lib/use-dialog-a11y";
+import { useExitAnimation } from "@/lib/use-exit-animation";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { cn } from "@/lib/utils";
 
 interface CompletionHistoryModalProps {
   cardId: string;
@@ -60,6 +62,7 @@ export function CompletionHistoryModal({
   const [statusMessage, setStatusMessage] = useState("");
 
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const { state, requestClose } = useExitAnimation();
 
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -118,7 +121,7 @@ export function CompletionHistoryModal({
       setShowDiscardConfirm(true);
       return;
     }
-    onClose();
+    requestClose(onClose);
   }
 
   useDialogA11y(dialogRef, attemptClose);
@@ -169,7 +172,7 @@ export function CompletionHistoryModal({
       }
 
       onEntriesChange?.(refreshed.entries);
-      onClose();
+      requestClose(onClose);
     } finally {
       setSaving(false);
     }
@@ -177,7 +180,12 @@ export function CompletionHistoryModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className={cn(
+        "fixed inset-0 z-50 flex items-center justify-center bg-black/50",
+        state === "open"
+          ? "[animation:fade-in_150ms_ease-out]"
+          : "[animation:fade-out_150ms_ease-in]",
+      )}
       onClick={attemptClose}
     >
       <div
@@ -186,7 +194,13 @@ export function CompletionHistoryModal({
         aria-modal="true"
         aria-label={`Completion history for ${square.label}`}
         tabIndex={-1}
-        className="border-border bg-card text-card-foreground mx-4 flex max-h-[80vh] w-fit max-w-sm min-w-[16rem] flex-col gap-3 rounded-[var(--radius-sm)] border-2 p-4 focus-visible:outline-none"
+        data-state={state}
+        className={cn(
+          "border-border bg-card text-card-foreground mx-4 flex max-h-[80vh] w-fit max-w-sm min-w-[16rem] flex-col gap-3 rounded-[var(--radius-sm)] border-2 p-4 focus-visible:outline-none",
+          state === "open"
+            ? "[animation:pop-in_150ms_ease-out]"
+            : "[animation:pop-out_150ms_ease-in]",
+        )}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-2">
@@ -300,7 +314,7 @@ export function CompletionHistoryModal({
           zIndexClassName="z-[60]"
           manageFocus={false}
           onCancel={() => setShowDiscardConfirm(false)}
-          onConfirm={onClose}
+          onConfirm={() => requestClose(onClose)}
         />
       )}
     </div>
