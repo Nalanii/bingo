@@ -14,8 +14,8 @@ export default function CardGridLoading() {
       </p>
       <div aria-hidden="true" className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
-          <div className="bg-muted size-7 animate-pulse rounded-[var(--radius-sm)]" />
-          <div className="bg-muted h-8 w-2/3 animate-pulse rounded-[var(--radius-sm)]" />
+          <div className="skeleton size-7 rounded-[var(--radius-sm)]" />
+          <div className="skeleton h-8 w-2/3 rounded-[var(--radius-sm)]" />
         </div>
         <div
           className="mx-auto grid w-full max-w-xl gap-1.5 sm:gap-2 md:gap-3"
@@ -26,7 +26,7 @@ export default function CardGridLoading() {
           {Array.from({ length: SKELETON_GRID_SIZE * SKELETON_GRID_SIZE }).map((_, index) => (
             <div
               key={index}
-              className="border-border bg-muted aspect-square animate-pulse rounded-[var(--radius-sm)] border-2"
+              className="border-border skeleton aspect-square rounded-[var(--radius-sm)] border-2"
             />
           ))}
         </div>
