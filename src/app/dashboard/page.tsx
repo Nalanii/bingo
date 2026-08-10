@@ -46,7 +46,7 @@ export default async function DashboardPage() {
       </div>
 
       {cards.length === 0 ? (
-        <Card className="border-dashed">
+        <Card className="border-dashed [animation:fade-in_300ms_ease-out]">
           <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
             <span
               aria-hidden="true"

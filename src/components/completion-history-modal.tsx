@@ -231,7 +231,7 @@ export function CompletionHistoryModal({
           )}
 
           {!loading && !loadError && entries && entries.length === 0 && (
-            <p className="text-sm">No completions yet.</p>
+            <p className="text-sm [animation:fade-in_300ms_ease-out]">No completions yet.</p>
           )}
 
           {!loading && !loadError && entriesAscending && entriesAscending.length > 0 && (
