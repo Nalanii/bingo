@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Square } from "@/lib/firestore/cards";
 import { getBingoLines, type BingoLine } from "@/lib/cards/progress";
+import { computeClientProgress, isSquareDone } from "@/lib/cards/client-progress";
 import {
   decrementSquareProgress,
   getSquareCompletionHistory,
@@ -32,23 +33,6 @@ function formatCompletionDate(completedAt: string): string {
     day: "numeric",
     year: "numeric",
   });
-}
-
-/**
- * A square is done when it's the free space, its counter reached goal, or (for CHECK
- * squares) it's in the completed set. This mirrors (but isn't the same as) the
- * `isSquareDone` in `src/lib/cards/progress.ts` — that version derives done-ness from
- * completion counts, while this one reads client-side `completedSquareIds`/`counts`
- * state directly, since CHECK-square toggles here don't update `counts`.
- */
-function isSquareDone(
-  square: Square,
-  completedSquareIds: Set<string>,
-  counts: Record<string, number>,
-): boolean {
-  if (square.isFreeSpace) return true;
-  if (square.kind === "COUNTER") return (counts[square.id] ?? 0) >= square.goal;
-  return completedSquareIds.has(square.id);
 }
 
 /**
@@ -99,6 +83,12 @@ export function BingoGrid({
     () => squares.length > 0 && squares.every((square) => isSquareDone(square, completedSquareIds, counts)),
     [squares, completedSquareIds, counts],
   );
+
+  const { completedCount, totalCount } = useMemo(
+    () => computeClientProgress(squares, completedSquareIds, counts),
+    [squares, completedSquareIds, counts],
+  );
+  const progressPercent = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
 
   useEffect(() => {
     const currentLineKeys = new Set(currentLines.map((line) => `${line.type}-${line.index}`));
@@ -242,6 +232,19 @@ export function BingoGrid({
 
   return (
     <div className="flex flex-col gap-2">
+      <div
+        role="progressbar"
+        aria-valuenow={progressPercent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${completedCount} of ${totalCount} squares completed`}
+        className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+      >
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-[width] duration-300 ease-out"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
       {celebrationTrigger > 0 && <BingoCelebration key={celebrationTrigger} lines={newLines} />}
       {blackoutTrigger > 0 && (
         <BingoCelebration key={`blackout-${blackoutTrigger}`} variant="blackout" />
