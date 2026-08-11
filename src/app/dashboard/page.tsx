@@ -108,7 +108,7 @@ export default async function DashboardPage() {
                             className="ml-1.5 inline-flex items-center gap-0.5"
                             aria-label="Has a free space"
                           >
-                            <span aria-hidden="true">⭐</span>
+                            <span aria-hidden="true">· ⭐</span>
                           </span>
                         </Tooltip>
                       )}
