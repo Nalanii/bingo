@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
 import { BackgroundOrbs } from "@/components/background-orbs";
+import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
 const display = Fredoka({
@@ -67,6 +68,7 @@ export default function RootLayout({
         </a>
         <BackgroundOrbs />
         <div className="relative z-0 flex min-h-full flex-1 flex-col">
+          <SiteHeader />
           {children}
           <SiteFooter />
         </div>
