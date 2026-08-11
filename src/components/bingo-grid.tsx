@@ -335,18 +335,15 @@ export function BingoGrid({
 }
 
 /**
- * Cycled by square position so incomplete squares read as a scattered
- * mosaic instead of a flat, uniform grid. Kept as tints (not solid fills)
- * so they stay visually distinct from the solid `bg-accent` free space and
- * solid `bg-success` completed/goal-reached squares. Contrast against
+ * One consistent pink tint for every incomplete square — a per-square color
+ * cycle was tried first but read as confusing rather than lively, so all
+ * incomplete squares share this tint instead. Kept as a tint (not a solid
+ * fill) so it stays visually distinct from the solid `bg-accent` free space
+ * and solid `bg-success` completed/goal-reached squares. Contrast against
  * card-foreground label text for both light and dark mode is regression-
  * tested in `src/app/design-tokens.contrast.test.ts`.
  */
-const INCOMPLETE_TINT_CLASSES = [
-  "border-primary/40 bg-primary/10",
-  "border-secondary/40 bg-secondary/10",
-  "border-accent-on-surface/40 bg-accent/15",
-] as const;
+const INCOMPLETE_TINT_CLASS = "border-primary/40 bg-primary/10";
 
 function BingoSquareCell({
   square,
@@ -431,10 +428,7 @@ function BingoSquareCell({
         ? "border-success bg-success text-success-foreground"
         : isPartial
           ? "border-success bg-success/20 text-card-foreground"
-          : cn(
-              INCOMPLETE_TINT_CLASSES[square.position % INCOMPLETE_TINT_CLASSES.length],
-              "text-card-foreground",
-            ),
+          : cn(INCOMPLETE_TINT_CLASS, "text-card-foreground"),
   );
 
   if (isFreeSpace) {
