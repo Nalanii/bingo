@@ -11,11 +11,11 @@ export default async function Home() {
     <main id="main-content" className="relative z-10 flex flex-1 flex-col items-center">
       <section className="mx-auto grid w-full max-w-6xl flex-1 items-center gap-12 px-6 py-16 md:grid-cols-2 md:py-24">
         <div className="flex flex-col items-start gap-6 text-left">
-          <span className="inline-flex items-center gap-2 rounded-full border-2 border-border bg-card px-4 py-1.5 text-sm font-bold">
-            <span aria-hidden="true">🎉</span> goal &amp; event bingo, made fun
+          <span className="inline-flex items-center gap-2 rounded-full border-2 border-border bg-accent px-4 py-1.5 text-sm font-bold text-accent-foreground">
+            <span aria-hidden="true">🎉</span> Goal &amp; event bingo, made easy
           </span>
-          <h1 className="font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
-            Turn your goals into a{" "}
+          <h1 className="font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl">
+            Turn anything into a{" "}
             <span className="text-primary-on-surface">B</span>
             <span className="text-secondary">I</span>
             <span className="text-success-on-surface">N</span>
@@ -23,9 +23,9 @@ export default async function Home() {
             <span className="text-accent-on-surface">O</span>.
           </h1>
           <p className="max-w-md text-lg text-muted-foreground">
-            Build 3×3 or 5×5 cards for anything — a year of adventures, a reading
-            challenge, a bucket list. Check squares off, count things up, and
-            celebrate every line.
+            Build a 3×3 or 5×5 card for anything you&apos;re chasing — a
+            reading list, a bucket list, a year of adventures. Check squares
+            off, count reps up, celebrate every line.
           </p>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -38,7 +38,8 @@ export default async function Home() {
             )}
           </div>
           <p className="text-sm text-muted-foreground">
-            Free to play. Sign in with Google, make as many cards as you want.
+            Free to play — sign in with Google, make as many cards as you
+            like.
           </p>
         </div>
 
