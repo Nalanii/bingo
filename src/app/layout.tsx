@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
+import { BackgroundOrbs } from "@/components/background-orbs";
+import { SiteFooter } from "@/components/site-footer";
 
 const display = Fredoka({
   variable: "--font-display",
@@ -56,14 +58,18 @@ export default function RootLayout({
       lang="en"
       className={`${display.variable} ${body.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">
+      <body className="relative flex min-h-full flex-col">
         <a
           href="#main-content"
           className="bg-primary text-primary-foreground sr-only rounded-[var(--radius-sm)] text-sm font-semibold focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2"
         >
           Skip to main content
         </a>
-        {children}
+        <BackgroundOrbs />
+        <div className="relative z-0 flex min-h-full flex-1 flex-col">
+          {children}
+          <SiteFooter />
+        </div>
       </body>
     </html>
   );

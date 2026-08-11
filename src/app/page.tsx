@@ -8,18 +8,8 @@ export default async function Home() {
   const user = await getUser();
 
   return (
-    <main id="main-content" className="relative flex flex-1 flex-col items-center overflow-hidden">
-      {/* playful background blobs */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-accent/40 blur-3xl"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute top-40 -right-24 h-72 w-72 rounded-full bg-secondary/30 blur-3xl"
-      />
-
-      <section className="z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-12 px-6 py-16 md:grid-cols-2 md:py-24">
+    <main id="main-content" className="relative z-10 flex flex-1 flex-col items-center">
+      <section className="mx-auto grid w-full max-w-6xl flex-1 items-center gap-12 px-6 py-16 md:grid-cols-2 md:py-24">
         <div className="flex flex-col items-start gap-6 text-left">
           <span className="inline-flex items-center gap-2 rounded-full border-2 border-border bg-card px-4 py-1.5 text-sm font-bold">
             <span aria-hidden="true">🎉</span> goal &amp; event bingo, made fun
@@ -56,10 +46,6 @@ export default async function Home() {
           <MiniBingoPreview />
         </div>
       </section>
-
-      <footer className="z-10 w-full border-t-2 border-border/60 py-6 text-center text-sm text-muted-foreground">
-        Made for fun. Bingoal is a work in progress ✨
-      </footer>
     </main>
   );
 }

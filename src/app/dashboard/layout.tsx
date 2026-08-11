@@ -11,7 +11,7 @@ export default async function DashboardLayout({
   const user = await getUser();
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-20 border-b-2 border-border bg-background/80 backdrop-blur">
         <nav
           aria-label="Main"
