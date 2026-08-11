@@ -7,7 +7,7 @@ test.describe("landing page", () => {
     await page.goto("/");
 
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
-      "Turn your goals into a",
+      "Turn anything into a",
     );
     await expect(
       page.getByRole("button", { name: "Continue with Google" }),
