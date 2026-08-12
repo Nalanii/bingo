@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getOwnedCardOrNotFound } from "@/lib/cards/access";
+import { ExportImageViewer } from "@/components/export-image-viewer";
 
 export async function generateMetadata({
   params,
@@ -30,16 +31,7 @@ export default async function ExportImagePage({
       <p className="text-muted-foreground max-w-sm text-sm">
         Right-click (or press and hold) the image below to save, copy, or share it.
       </p>
-      {/* eslint-disable-next-line @next/next/no-img-element -- this is a
-          generated, per-request PNG from our own route handler, not a static
-          asset next/image's optimizer would help with. */}
-      <img
-        src={`/dashboard/cards/${id}/export-image/image`}
-        alt={`${card.name} bingo card`}
-        // The image's own background is near-black, same as this page's —
-        // without a visible border it has no edge to see against the page.
-        className="border-control-border w-full max-w-xl rounded-[var(--radius-lg)] border-2 shadow-lg"
-      />
+      <ExportImageViewer src={`/dashboard/cards/${id}/export-image/image`} alt={`${card.name} bingo card`} />
     </div>
   );
 }

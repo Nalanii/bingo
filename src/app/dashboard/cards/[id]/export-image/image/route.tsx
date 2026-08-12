@@ -8,7 +8,7 @@ import { BingoGlyph, loadCardFonts } from "@/lib/cards/bingo-mark";
 export const contentType = "image/png";
 
 const CANVAS = 1080;
-const PADDING = 36;
+const PADDING = 32;
 
 // Fixed vertical budget for everything above/below the board, so the board's
 // cell size can be computed to fit the space actually left over rather than
@@ -16,11 +16,11 @@ const PADDING = 36;
 // size with no shrink-to-fit, so this has to be done in JS up front. Kept as
 // tight as legibility allows so the board — the actual point of the image —
 // fills as much of the canvas as possible.
-const TITLE_FONT_SIZE = 38;
-const TITLE_HEIGHT = 88; // room for up to ~2 wrapped lines at TITLE_FONT_SIZE
-const GAP_TITLE_BOARD = 16;
-const GAP_BOARD_FOOTER = 14;
-const FOOTER_HEIGHT = 50;
+const TITLE_FONT_SIZE = 57; // ~50% bigger than the previous 38
+const TITLE_HEIGHT = 132; // room for up to ~2 wrapped lines at TITLE_FONT_SIZE
+const GAP_TITLE_BOARD = 10;
+const GAP_BOARD_FOOTER = 10;
+const FOOTER_HEIGHT = 46;
 const RESERVED_HEIGHT = TITLE_HEIGHT + GAP_TITLE_BOARD + GAP_BOARD_FOOTER + FOOTER_HEIGHT;
 
 // Dark-mode brand tokens from src/app/globals.css, hardcoded because satori
