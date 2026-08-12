@@ -26,14 +26,19 @@ export default async function ExportImagePage({
   const card = await getOwnedCardOrNotFound(id);
 
   return (
-    <div className="flex justify-center py-6">
+    <div className="flex flex-col items-center gap-4 py-6 text-center">
+      <p className="text-muted-foreground max-w-sm text-sm">
+        Right-click (or press and hold) the image below to save, copy, or share it.
+      </p>
       {/* eslint-disable-next-line @next/next/no-img-element -- this is a
           generated, per-request PNG from our own route handler, not a static
           asset next/image's optimizer would help with. */}
       <img
         src={`/dashboard/cards/${id}/export-image/image`}
         alt={`${card.name} bingo card`}
-        className="w-full max-w-xl rounded-[var(--radius-lg)] shadow-lg"
+        // The image's own background is near-black, same as this page's —
+        // without a visible border it has no edge to see against the page.
+        className="border-control-border w-full max-w-xl rounded-[var(--radius-lg)] border-2 shadow-lg"
       />
     </div>
   );

@@ -8,16 +8,19 @@ import { BingoGlyph, loadCardFonts } from "@/lib/cards/bingo-mark";
 export const contentType = "image/png";
 
 const CANVAS = 1080;
-const PADDING = 64;
+const PADDING = 48;
 
 // Fixed vertical budget for everything above/below the board, so the board's
 // cell size can be computed to fit the space actually left over rather than
 // overflowing the canvas — satori stacks flex children at their natural
-// size with no shrink-to-fit, so this has to be done in JS up front.
-const TITLE_HEIGHT = 130; // room for up to ~2 wrapped lines at TITLE_FONT_SIZE
-const GAP_TITLE_BOARD = 40;
-const GAP_BOARD_FOOTER = 36;
-const FOOTER_HEIGHT = 78;
+// size with no shrink-to-fit, so this has to be done in JS up front. Kept as
+// tight as legibility allows so the board — the actual point of the image —
+// fills as much of the canvas as possible.
+const TITLE_FONT_SIZE = 46;
+const TITLE_HEIGHT = 108; // room for up to ~2 wrapped lines at TITLE_FONT_SIZE
+const GAP_TITLE_BOARD = 24;
+const GAP_BOARD_FOOTER = 20;
+const FOOTER_HEIGHT = 60;
 const RESERVED_HEIGHT = TITLE_HEIGHT + GAP_TITLE_BOARD + GAP_BOARD_FOOTER + FOOTER_HEIGHT;
 
 // Dark-mode brand tokens from src/app/globals.css, hardcoded because satori
@@ -121,12 +124,15 @@ function ExportSquare({
       }}
     >
       {square.isFreeSpace ? (
-        <>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <div style={{ display: "flex", fontSize: cellSize * 0.24 }}>⭐</div>
           <div
             style={{
               display: "flex",
-              marginTop: 6,
+              // Proportional (not a flat px value) so the gap keeps reading
+              // as a clear line break rather than a cramped stack as cellSize
+              // grows with the board.
+              marginTop: cellSize * 0.06,
               fontSize: cellSize * 0.1,
               fontWeight: 700,
               fontFamily: "Fredoka",
@@ -137,19 +143,28 @@ function ExportSquare({
           >
             Free space
           </div>
-        </>
+        </div>
       ) : (
         <div
           style={{
-            display: "flex",
+            // -webkit-line-clamp (satori supports it, same as browsers) caps
+            // the label at a fixed number of lines AND paints a trailing "…"
+            // when it truncates, unlike plain overflow:hidden which just cuts
+            // the text off with no indication anything was clipped.
+            display: "-webkit-box",
+            WebkitBoxOrient: "vertical",
+            WebkitLineClamp: 3,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
             fontSize: cellSize * 0.13,
             fontWeight: 600,
             lineHeight: 1.15,
             color: textColor,
+            textAlign: "center",
+            width: "100%",
             // Leave room above the footer (count/goal and/or caption) so the
             // (vertically-centered) label can never grow into it.
             maxHeight: cellSize * 0.62 - footerHeight,
-            overflow: "hidden",
           }}
         >
           {square.label}
@@ -272,7 +287,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
           width: "100%",
           height: TITLE_HEIGHT,
           fontFamily: "Fredoka",
-          fontSize: 52,
+          fontSize: TITLE_FONT_SIZE,
           fontWeight: 700,
           color: FOREGROUND,
           letterSpacing: "-1px",
@@ -334,12 +349,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         }}
       >
         <div style={{ display: "flex", alignItems: "center" }}>
-          <BingoGlyph size={40} />
-          <div style={{ display: "flex", marginLeft: 10, fontFamily: "Fredoka", fontSize: 24, fontWeight: 700, color: FOREGROUND }}>
+          <BingoGlyph size={32} />
+          <div style={{ display: "flex", marginLeft: 8, fontFamily: "Fredoka", fontSize: 20, fontWeight: 700, color: FOREGROUND }}>
             Bingoal
           </div>
         </div>
-        <div style={{ display: "flex", marginTop: 8, fontSize: 16, color: MUTED_FOREGROUND }}>Generated on {generatedOn}</div>
+        <div style={{ display: "flex", marginTop: 6, fontSize: 14, color: MUTED_FOREGROUND }}>Generated on {generatedOn}</div>
       </div>
     </div>,
     { width: CANVAS, height: CANVAS, fonts: await loadCardFonts() },
