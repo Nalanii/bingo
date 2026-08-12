@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getOwnedCard } from "@/lib/cards/access";
-import { countCompletionsBySquare, computeCardProgress } from "@/lib/cards/progress";
+import { countCompletionsBySquare } from "@/lib/cards/progress";
 import { getCompletions } from "@/lib/firestore/completions";
 import type { Square } from "@/lib/firestore/cards";
 import { BingoGlyph, loadCardFonts } from "@/lib/cards/bingo-mark";
@@ -10,26 +10,22 @@ export const contentType = "image/png";
 const CANVAS = 1080;
 const PADDING = 64;
 
-// Fixed vertical budget for everything above the board, so the board's cell
-// size can be computed to fit the space actually left over rather than
+// Fixed vertical budget for everything above/below the board, so the board's
+// cell size can be computed to fit the space actually left over rather than
 // overflowing the canvas — satori stacks flex children at their natural
 // size with no shrink-to-fit, so this has to be done in JS up front.
-const HEADER_HEIGHT = 56;
 const TITLE_HEIGHT = 130; // room for up to ~2 wrapped lines at TITLE_FONT_SIZE
-const PROGRESS_HEIGHT = 20;
-const GAP_HEADER_TITLE = 28;
-const GAP_TITLE_PROGRESS = 24;
-const GAP_PROGRESS_BOARD = 32;
-const RESERVED_HEIGHT =
-  HEADER_HEIGHT + GAP_HEADER_TITLE + TITLE_HEIGHT + GAP_TITLE_PROGRESS + PROGRESS_HEIGHT + GAP_PROGRESS_BOARD;
+const GAP_TITLE_BOARD = 40;
+const GAP_BOARD_FOOTER = 36;
+const FOOTER_HEIGHT = 78;
+const RESERVED_HEIGHT = TITLE_HEIGHT + GAP_TITLE_BOARD + GAP_BOARD_FOOTER + FOOTER_HEIGHT;
 
 // Dark-mode brand tokens from src/app/globals.css, hardcoded because satori
 // (which powers ImageResponse) can't read CSS custom properties — same
 // approach as src/app/opengraph-image.tsx.
 const BACKGROUND = "#171325";
 const FOREGROUND = "#f4eeff";
-const MUTED = "#2a2340";
-const PRIMARY = "#ff6aa2";
+const MUTED_FOREGROUND = "#b0a6c9";
 const ACCENT = "#ffdd6b";
 const ACCENT_FOREGROUND = "#211e2e";
 const SUCCESS = "#4fd6c9";
@@ -48,9 +44,24 @@ function isSquareDone(square: Square, count: number): boolean {
   return square.isFreeSpace || count >= square.goal;
 }
 
+/** Formats an ISO 8601 timestamp as a local date with a full month name, e.g. "January 1, 2026". Mirrors the client-side helper of the same name in src/components/bingo-grid.tsx. */
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
 const CELL_PADDING = 10;
 
-function ExportSquare({ square, count, cellSize }: { square: Square; count: number; cellSize: number }) {
+function ExportSquare({
+  square,
+  count,
+  cellSize,
+  latestCompletionDate,
+}: {
+  square: Square;
+  count: number;
+  cellSize: number;
+  latestCompletionDate: string | undefined;
+}) {
   const done = isSquareDone(square, count);
   const isCounter = square.kind === "COUNTER" && !square.isFreeSpace;
   const isPartial = isCounter && count > 0 && !done;
@@ -69,10 +80,27 @@ function ExportSquare({ square, count, cellSize }: { square: Square; count: numb
       : PRIMARY_TINT_BORDER;
   const textColor = square.isFreeSpace ? ACCENT_FOREGROUND : done ? SUCCESS_FOREGROUND : FOREGROUND;
 
-  // Reserved footer height for the count/goal text on COUNTER squares —
-  // computed as a plain number so it never depends on satori measuring
-  // any wrapped text, only cellSize (see the `isCounter` block below for why).
-  const footerHeight = cellSize * 0.16;
+  // Mirrors bingo-grid.tsx's historyDateButton condition: a CHECK square
+  // shows "Completed:" once done, a COUNTER square shows "Last completed:"
+  // once it has any progress — both only when a date is actually on record.
+  const captionLabel = !square.isFreeSpace && latestCompletionDate
+    ? isCounter
+      ? count > 0
+        ? "Last completed:"
+        : null
+      : done
+        ? "Completed:"
+        : null
+    : null;
+
+  // Reserved footer space for the count/goal row and/or the completion-date
+  // caption on COUNTER/CHECK squares, computed as plain numbers so they
+  // never depend on satori measuring any wrapped text (see the absolutely
+  // positioned footer below for why that matters).
+  const countRowHeight = isCounter ? cellSize * 0.14 : 0;
+  const captionHeight = captionLabel ? cellSize * 0.16 : 0;
+  const footerGap = isCounter && captionLabel ? cellSize * 0.02 : 0;
+  const footerHeight = countRowHeight + footerGap + captionHeight;
 
   return (
     <div
@@ -118,16 +146,16 @@ function ExportSquare({ square, count, cellSize }: { square: Square; count: numb
             fontWeight: 600,
             lineHeight: 1.15,
             color: textColor,
-            // Leave room above the counter footer for COUNTER squares so the
+            // Leave room above the footer (count/goal and/or caption) so the
             // (vertically-centered) label can never grow into it.
-            maxHeight: isCounter ? cellSize * 0.62 - footerHeight : cellSize * 0.62,
+            maxHeight: cellSize * 0.62 - footerHeight,
             overflow: "hidden",
           }}
         >
           {square.label}
         </div>
       )}
-      {isCounter && (
+      {footerHeight > 0 && (
         // Absolutely positioned (not a normal-flow sibling below the label)
         // and placed at a fixed pixel offset derived only from `cellSize` —
         // satori mismeasures the label's real height when it wraps to
@@ -143,15 +171,33 @@ function ExportSquare({ square, count, cellSize }: { square: Square; count: numb
             width: cellSize - CELL_PADDING * 2,
             height: footerHeight,
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: cellSize * 0.11,
-            fontWeight: 700,
-            fontFamily: "Fredoka",
-            color: textColor,
+            overflow: "hidden",
           }}
         >
-          {count}/{square.goal}
+          {isCounter && (
+            <div style={{ display: "flex", fontSize: cellSize * 0.11, fontWeight: 700, fontFamily: "Fredoka", color: textColor }}>
+              {count}/{square.goal}
+            </div>
+          )}
+          {captionLabel && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                marginTop: isCounter ? footerGap : 0,
+                fontSize: cellSize * 0.06,
+                lineHeight: 1.2,
+                color: textColor,
+              }}
+            >
+              <div style={{ display: "flex" }}>{captionLabel}</div>
+              <div style={{ display: "flex" }}>{formatDate(latestCompletionDate!)}</div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -159,10 +205,10 @@ function ExportSquare({ square, count, cellSize }: { square: Square; count: numb
 }
 
 /**
- * Renders a shareable PNG snapshot of a bingo card: title, brand mark,
- * progress bar, and the full board — a static image with no interactive
- * chrome (no +/− controls, no tap affordances, no history captions).
- * See GitHub issue #60.
+ * Renders a shareable PNG snapshot of a bingo card: title, board (including
+ * each square's completion date where applicable), and a small Bingoal
+ * credit + generation date footer — a static image with no interactive
+ * chrome (no +/− controls, no tap affordances). See GitHub issue #60.
  */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -178,8 +224,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   const completions = await getCompletions(id);
   const countsBySquareId = countCompletionsBySquare(completions);
-  const { completedCount, totalCount } = computeCardProgress(card.gridSize, card.squares, completions);
-  const progressPercent = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
+  const latestCompletionDates = completions.reduce<Record<string, string>>((latest, completion) => {
+    const existing = latest[completion.squareId];
+    if (!existing || completion.completedAt > new Date(existing)) {
+      latest[completion.squareId] = completion.completedAt.toISOString();
+    }
+    return latest;
+  }, {});
 
   const squaresByPosition = new Map(card.squares.map((square) => [square.position, square]));
   const slotCount = card.gridSize * card.gridSize;
@@ -189,14 +240,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const contentHeight = CANVAS - PADDING * 2;
   const gap = card.gridSize >= 5 ? 10 : 14;
   // Cell size is the smaller of the width-constrained and height-constrained
-  // fits, so the board never overflows the canvas bottom regardless of
-  // gridSize (see RESERVED_HEIGHT above for what's already spoken for).
+  // fits, so the board never overflows the canvas regardless of gridSize
+  // (see RESERVED_HEIGHT above for what's already spoken for).
   const availableGridHeight = contentHeight - RESERVED_HEIGHT;
   const widthBasedCellSize = (contentWidth - gap * (card.gridSize - 1)) / card.gridSize;
   const heightBasedCellSize = (availableGridHeight - gap * (card.gridSize - 1)) / card.gridSize;
   const cellSize = Math.min(widthBasedCellSize, heightBasedCellSize);
   const gridWidth = cellSize * card.gridSize + gap * (card.gridSize - 1);
   const gridHeight = gridWidth;
+
+  const generatedOn = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
   return new ImageResponse(
     <div
@@ -210,30 +263,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         padding: PADDING,
       }}
     >
-      {/* Brand mark lockup */}
-      <div style={{ display: "flex", alignItems: "center", height: HEADER_HEIGHT }}>
-        <BingoGlyph size={56} />
-        <div
-          style={{
-            display: "flex",
-            marginLeft: 14,
-            fontFamily: "Fredoka",
-            fontSize: 32,
-            fontWeight: 700,
-            color: FOREGROUND,
-            letterSpacing: "-0.5px",
-          }}
-        >
-          Bingoal
-        </div>
-      </div>
-
       {/* Title */}
       <div
         style={{
           display: "flex",
+          justifyContent: "center",
           alignItems: "flex-start",
-          marginTop: GAP_HEADER_TITLE,
+          width: "100%",
           height: TITLE_HEIGHT,
           fontFamily: "Fredoka",
           fontSize: 52,
@@ -241,45 +277,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
           color: FOREGROUND,
           letterSpacing: "-1px",
           lineHeight: 1.15,
+          textAlign: "center",
           overflow: "hidden",
         }}
       >
         {card.name}
       </div>
 
-      {/* Progress bar */}
-      <div
-        style={{
-          display: "flex",
-          marginTop: GAP_TITLE_PROGRESS,
-          width: "100%",
-          height: PROGRESS_HEIGHT,
-          borderRadius: 9999,
-          background: MUTED,
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            width: `${progressPercent}%`,
-            height: "100%",
-            borderRadius: 9999,
-            background: `linear-gradient(to right, ${PRIMARY}, ${ACCENT})`,
-          }}
-        />
-      </div>
-
-      {/* Board — centered in case the height-constrained cell size leaves
-          the grid narrower than the full content width. */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          marginTop: GAP_PROGRESS_BOARD,
-          width: contentWidth,
-        }}
-      >
+      {/* Board */}
+      <div style={{ display: "flex", justifyContent: "center", marginTop: GAP_TITLE_BOARD, width: contentWidth }}>
         <div
           style={{
             display: "flex",
@@ -297,6 +303,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
                 square={square}
                 count={countsBySquareId[square.id] ?? 0}
                 cellSize={cellSize}
+                latestCompletionDate={latestCompletionDates[square.id]}
               />
             ) : (
               <div
@@ -306,12 +313,33 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
                   width: cellSize,
                   height: cellSize,
                   borderRadius: 14,
-                  border: `3px dashed ${MUTED}`,
+                  border: "3px dashed #2a2340",
                 }}
               />
             ),
           )}
         </div>
+      </div>
+
+      {/* Footer: brand credit + generation date, centered */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          marginTop: GAP_BOARD_FOOTER,
+          height: FOOTER_HEIGHT,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <BingoGlyph size={40} />
+          <div style={{ display: "flex", marginLeft: 10, fontFamily: "Fredoka", fontSize: 24, fontWeight: 700, color: FOREGROUND }}>
+            Bingoal
+          </div>
+        </div>
+        <div style={{ display: "flex", marginTop: 8, fontSize: 16, color: MUTED_FOREGROUND }}>Generated on {generatedOn}</div>
       </div>
     </div>,
     { width: CANVAS, height: CANVAS, fonts: await loadCardFonts() },
