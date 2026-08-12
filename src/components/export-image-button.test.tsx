@@ -50,8 +50,8 @@ describe("ExportImageButton", () => {
     });
 
     expect(global.fetch).toHaveBeenCalledWith("/dashboard/cards/card-1/export-image");
-    const downloadButton = await screen.findByRole("menuitem", { name: "Download" });
-    expect(screen.queryByRole("menuitem", { name: "Copy" })).not.toBeInTheDocument();
+    const downloadButton = await screen.findByRole("button", { name: "Download" });
+    expect(screen.queryByRole("button", { name: "Copy" })).not.toBeInTheDocument();
 
     fireEvent.click(downloadButton);
 
@@ -74,7 +74,7 @@ describe("ExportImageButton", () => {
       fireEvent.click(screen.getByRole("button", { name: "Export Weekend Fun! as an image" }));
     });
 
-    const copyButton = await screen.findByRole("menuitem", { name: "Copy" });
+    const copyButton = await screen.findByRole("button", { name: "Copy" });
     fireEvent.click(copyButton);
 
     await waitFor(() => expect(write).toHaveBeenCalledTimes(1));
@@ -128,6 +128,26 @@ describe("ExportImageButton", () => {
     });
 
     expect(share).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Download" })).not.toBeInTheDocument();
+  });
+
+  it("silently ignores an AbortError from a dismissed share sheet", async () => {
+    global.fetch = vi.fn().mockResolvedValue(okPngResponse());
+    const abortError = new Error("share canceled");
+    abortError.name = "AbortError";
+    const share = vi.fn().mockRejectedValue(abortError);
+    const canShare = vi.fn().mockReturnValue(true);
+    Object.defineProperty(navigator, "share", { value: share, configurable: true });
+    Object.defineProperty(navigator, "canShare", { value: canShare, configurable: true });
+
+    render(<ExportImageButton cardId="card-1" cardName="Weekend Fun!" />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Export Weekend Fun! as an image" }));
+    });
+
+    expect(share).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Download" })).not.toBeInTheDocument();
   });
 });

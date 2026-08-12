@@ -63,6 +63,17 @@ export function ExportImageButton({ cardId, cardName }: ExportImageButtonProps) 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const statusId = useId();
 
+  // Guards state-setting continuations of in-flight async work (fetch,
+  // clipboard write, share) against firing after this component has
+  // unmounted — e.g. the user navigates away from the play page mid-request.
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const closeMenu = () => setMenuBlob(null);
   useDialogA11y(popoverRef, closeMenu);
 
@@ -86,12 +97,15 @@ export function ExportImageButton({ cardId, cardName }: ExportImageButtonProps) 
     setPending(true);
     try {
       const response = await fetch(`/dashboard/cards/${cardId}/export-image`);
+      if (!isMountedRef.current) return;
       if (!response.ok) {
         const message = await response.text().catch(() => "");
+        if (!isMountedRef.current) return;
         setError(message || "Couldn't create the image. Please try again.");
         return;
       }
       const blob = await response.blob();
+      if (!isMountedRef.current) return;
       const file = new File([blob], `${sanitizeForFilename(cardName)}-bingo.png`, {
         type: "image/png",
       });
@@ -99,8 +113,9 @@ export function ExportImageButton({ cardId, cardName }: ExportImageButtonProps) 
       if (canShareFile(file)) {
         try {
           await navigator.share({ files: [file], title: cardName });
-          setStatus("Shared!");
+          if (isMountedRef.current) setStatus("Shared!");
         } catch (shareError) {
+          if (!isMountedRef.current) return;
           // AbortError means the user just dismissed the share sheet — not a failure worth reporting.
           if (shareError instanceof Error && shareError.name === "AbortError") return;
           setError("Couldn't share the image. Please try again.");
@@ -111,22 +126,25 @@ export function ExportImageButton({ cardId, cardName }: ExportImageButtonProps) 
       // No (full) Web Share support — offer explicit download/copy actions instead.
       setMenuBlob(blob);
     } catch {
-      setError("Couldn't create the image. Please try again.");
+      if (isMountedRef.current) setError("Couldn't create the image. Please try again.");
     } finally {
-      setPending(false);
+      if (isMountedRef.current) setPending(false);
     }
   }
 
   function handleDownload() {
     if (!menuBlob) return;
     const url = URL.createObjectURL(menuBlob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${sanitizeForFilename(cardName)}-bingo.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    try {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${sanitizeForFilename(cardName)}-bingo.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
     setStatus("Downloaded!");
     closeMenu();
   }
@@ -135,10 +153,13 @@ export function ExportImageButton({ cardId, cardName }: ExportImageButtonProps) 
     if (!menuBlob) return;
     try {
       await navigator.clipboard.write([new ClipboardItem({ "image/png": menuBlob })]);
+      if (!isMountedRef.current) return;
       setStatus("Copied!");
       closeMenu();
     } catch {
-      setError("Couldn't copy the image. Please try downloading it instead.");
+      if (isMountedRef.current) {
+        setError("Couldn't copy the image. Please try downloading it instead.");
+      }
     }
   }
 
@@ -149,6 +170,9 @@ export function ExportImageButton({ cardId, cardName }: ExportImageButtonProps) 
           ref={triggerRef}
           type="button"
           aria-label={`Export ${cardName} as an image`}
+          aria-haspopup="true"
+          aria-expanded={!!menuBlob}
+          aria-describedby={statusId}
           aria-busy={pending}
           disabled={pending}
           className={cn(ICON_BUTTON_CLASS, "disabled:cursor-wait disabled:opacity-60")}
@@ -161,14 +185,12 @@ export function ExportImageButton({ cardId, cardName }: ExportImageButtonProps) 
       {menuBlob && (
         <div
           ref={popoverRef}
-          role="menu"
           aria-label="Export options"
           tabIndex={-1}
           className="border-border bg-card text-card-foreground absolute top-full right-0 z-10 mt-2 flex w-40 flex-col gap-1 rounded-[var(--radius-sm)] border-2 p-1.5 shadow-lg focus-visible:outline-none"
         >
           <button
             type="button"
-            role="menuitem"
             className="flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-sm font-medium transition-colors hover:bg-muted"
             onClick={handleDownload}
           >
@@ -178,7 +200,6 @@ export function ExportImageButton({ cardId, cardName }: ExportImageButtonProps) 
           {canCopyImages() && (
             <button
               type="button"
-              role="menuitem"
               className="flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-sm font-medium transition-colors hover:bg-muted"
               onClick={handleCopy}
             >
