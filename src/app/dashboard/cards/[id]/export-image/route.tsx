@@ -147,7 +147,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   const result = await getOwnedCard(id);
   if (!result.ok) {
-    return new Response(result.error, { status: 404 });
+    // getOwnedCard collapses "not signed in" and "card missing/not yours" into
+    // one error union — distinguish them here so an unauthenticated request
+    // gets a 401 rather than being told the card doesn't exist.
+    const status = result.error === "You need to sign in to do that." ? 401 : 404;
+    return new Response(result.error, { status });
   }
   const { card } = result;
 
