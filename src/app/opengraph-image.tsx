@@ -1,5 +1,13 @@
 import { ImageResponse } from "next/og";
-import { BingoBadge, BingoGlyph, loadCardFonts } from "@/lib/cards/bingo-mark";
+import {
+  BADGE_PINK,
+  BADGE_PURPLE,
+  BADGE_TEAL,
+  BADGE_YELLOW,
+  BingoBadge,
+  BingoGlyph,
+  loadCardFonts,
+} from "@/lib/cards/bingo-mark";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -88,10 +96,10 @@ export default async function OpengraphImage() {
           style={{
             display: "flex",
             fontFamily: "Fredoka",
-            fontSize: 96,
+            fontSize: 72,
             fontWeight: 700,
             color: "#fff9f0",
-            letterSpacing: "-2px",
+            letterSpacing: "-1px",
           }}
         >
           Bingoal
@@ -99,13 +107,30 @@ export default async function OpengraphImage() {
         <div
           style={{
             display: "flex",
-            marginTop: 16,
-            fontSize: 36,
+            marginTop: 20,
+            fontSize: 34,
             color: "#fff9f0",
             maxWidth: 620,
           }}
         >
-          Turn your goals & events into a bingo card
+          Turn anything into a
+        </div>
+        {/* Mirrors the landing page hero's colored BINGO letters */}
+        <div
+          style={{
+            display: "flex",
+            fontFamily: "Fredoka",
+            fontSize: 96,
+            fontWeight: 700,
+            letterSpacing: "-2px",
+          }}
+        >
+          <div style={{ display: "flex", color: BADGE_PINK }}>B</div>
+          <div style={{ display: "flex", color: BADGE_PURPLE }}>I</div>
+          <div style={{ display: "flex", color: BADGE_TEAL }}>N</div>
+          <div style={{ display: "flex", color: BADGE_PINK }}>G</div>
+          <div style={{ display: "flex", color: BADGE_YELLOW }}>O</div>
+          <div style={{ display: "flex", color: "#fff9f0" }}>.</div>
         </div>
       </div>
       <div style={{ position: "relative", display: "flex" }}>

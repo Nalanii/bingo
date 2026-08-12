@@ -4,11 +4,18 @@ import path from "node:path";
 const CELL = "#fff9f0";
 // Bingoal's dark-mode brand tokens (--primary, --secondary, --accent, --success
 // in src/app/globals.css) — the mark uses these directly so it reads as "the
-// site's colors" rather than a one-off palette.
+// site's colors" rather than a one-off palette. Exported so other satori
+// routes (e.g. opengraph-image.tsx) can color a "BINGO" wordmark the same
+// way the landing page hero does.
 const PINK = "#ff6aa2";
 const PURPLE = "#9b7bff";
 const TEAL = "#4fd6c9";
 const YELLOW = "#ffdd6b";
+
+export const BADGE_PINK = PINK;
+export const BADGE_PURPLE = PURPLE;
+export const BADGE_TEAL = TEAL;
+export const BADGE_YELLOW = YELLOW;
 
 /**
  * The site's real display/body fonts (Fredoka, Nunito), loaded from local

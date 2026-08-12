@@ -19,7 +19,7 @@ const body = Nunito({
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://bingo-psi-liart.vercel.app";
 const title = "Bingoal — goal & event bingo";
 const description =
-  "Build fun, funky bingo cards for your goals and events. Check things off, count things up, and chase that BINGO.";
+  "Turn anything into a BINGO — a reading list, a bucket list, a year of adventures. Check squares off, count reps up, celebrate every line.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
