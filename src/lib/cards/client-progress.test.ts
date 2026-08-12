@@ -64,4 +64,23 @@ describe("computeClientProgress", () => {
     const result = computeClientProgress(squares, new Set(["a"]), { c: 5 });
     expect(result).toEqual({ completedCount: 2, totalCount: 3 });
   });
+
+  it("gives fractional credit for an in-progress COUNTER square", () => {
+    const squares = [square({ id: "a", position: 0, kind: "COUNTER", goal: 10 })];
+    const result = computeClientProgress(squares, new Set(), { a: 7 });
+    expect(result.completedCount).toBeCloseTo(0.7);
+    expect(result.totalCount).toBe(1);
+  });
+
+  it("caps a COUNTER square's credit at 1 even past its goal", () => {
+    const squares = [square({ id: "a", position: 0, kind: "COUNTER", goal: 3 })];
+    const result = computeClientProgress(squares, new Set(), { a: 5 });
+    expect(result.completedCount).toBe(1);
+  });
+
+  it("gives no credit for a COUNTER square with zero progress", () => {
+    const squares = [square({ id: "a", position: 0, kind: "COUNTER", goal: 10 })];
+    const result = computeClientProgress(squares, new Set(), {});
+    expect(result.completedCount).toBe(0);
+  });
 });

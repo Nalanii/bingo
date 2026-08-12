@@ -18,8 +18,23 @@ export function isSquareDone(
 }
 
 export interface ClientProgress {
+  /**
+   * Sum of per-square progress credit (0–1 each), not a whole-square count — a
+   * COUNTER square at 7/10 contributes 0.7. Free space is excluded, same as `totalCount`.
+   */
   completedCount: number;
   totalCount: number;
+}
+
+/**
+ * Fractional progress credit for a non-free-space square: 1 for a completed
+ * CHECK square, `min(count / goal, 1)` for a COUNTER square (so a square at
+ * 7/10 contributes 0.7). Mirrors `squareCredit` in `src/lib/cards/progress.ts`
+ * but reads client-side toggle state directly, for the same reason `isSquareDone` above does.
+ */
+function squareCredit(square: Square, completedSquareIds: Set<string>, counts: Record<string, number>): number {
+  if (square.kind === "COUNTER") return Math.min((counts[square.id] ?? 0) / square.goal, 1);
+  return completedSquareIds.has(square.id) ? 1 : 0;
 }
 
 /**
@@ -38,7 +53,7 @@ export function computeClientProgress(
   for (const square of squares) {
     if (square.isFreeSpace) continue;
     totalCount += 1;
-    if (isSquareDone(square, completedSquareIds, counts)) completedCount += 1;
+    completedCount += squareCredit(square, completedSquareIds, counts);
   }
   return { completedCount, totalCount };
 }

@@ -237,7 +237,7 @@ export function BingoGrid({
         aria-valuenow={progressPercent}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`${completedCount} of ${totalCount} squares completed`}
+        aria-label={`${progressPercent}% complete`}
         className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
       >
         <div

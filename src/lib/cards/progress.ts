@@ -2,6 +2,11 @@ import type { Square } from "@/lib/firestore/cards";
 import type { Completion } from "@/lib/firestore/completions";
 
 export interface CardProgress {
+  /**
+   * Sum of per-square progress credit (0–1 each), not a whole-square count — a
+   * COUNTER square at 7/10 contributes 0.7. Only fully-done squares (see
+   * `isSquareDone`) count toward `hasBingo`/`isBlackout`.
+   */
   completedCount: number;
   totalCount: number;
   hasBingo: boolean;
@@ -11,6 +16,11 @@ export interface CardProgress {
 /** A square is done when it's the free space or its completion count reaches its goal (CHECK squares have goal 1). */
 function isSquareDone(square: Square, count: number): boolean {
   return square.isFreeSpace || count >= square.goal;
+}
+
+/** Fractional progress credit for a non-free-space square: 0–1, proportional to count/goal (CHECK squares have goal 1, so this is still binary for them). */
+function squareCredit(square: Square, count: number): number {
+  return Math.min(count / square.goal, 1);
 }
 
 export type BingoLineType = "row" | "column" | "diagonal";
@@ -69,10 +79,10 @@ export function computeCardProgress(
   let completedCount = 0;
   let totalCount = 0;
   for (const square of squares) {
-    const done = isSquareDone(square, countsBySquareId[square.id] ?? 0);
-    doneByPosition.set(square.position, done);
+    const count = countsBySquareId[square.id] ?? 0;
+    doneByPosition.set(square.position, isSquareDone(square, count));
     if (square.isFreeSpace) continue;
-    if (done) completedCount += 1;
+    completedCount += squareCredit(square, count);
     totalCount += 1;
   }
 

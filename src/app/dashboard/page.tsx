@@ -122,7 +122,7 @@ export default async function DashboardPage() {
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-xs text-muted-foreground">
-                          {progress.completedCount}/{progress.totalCount} done
+                          {Math.round(progress.completedCount)}/{progress.totalCount} done
                         </p>
                         <Link
                           href={`/dashboard/cards/${card.id}/edit`}
