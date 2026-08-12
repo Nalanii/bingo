@@ -4,6 +4,7 @@ import { getOwnedCardOrNotFound } from "@/lib/cards/access";
 import { countCompletionsBySquare } from "@/lib/cards/progress";
 import { getCompletions } from "@/lib/firestore/completions";
 import { BingoGrid } from "@/components/bingo-grid";
+import { ExportImageButton } from "@/components/export-image-button";
 
 export default async function CardGridPage({
   params,
@@ -43,6 +44,7 @@ export default async function CardGridPage({
           <ArrowLeft aria-hidden="true" className="size-5" />
         </Link>
         <h1 className="flex-1 font-display text-2xl font-bold sm:text-3xl">{card.name}</h1>
+        <ExportImageButton cardId={card.id} cardName={card.name} />
         <Link
           href={`/dashboard/cards/${card.id}/edit`}
           aria-label={`Edit ${card.name}`}
