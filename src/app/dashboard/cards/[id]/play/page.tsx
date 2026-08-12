@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, ImageDown, Pencil } from "lucide-react";
 import { getOwnedCardOrNotFound } from "@/lib/cards/access";
 import { countCompletionsBySquare } from "@/lib/cards/progress";
 import { getCompletions } from "@/lib/firestore/completions";
 import { BingoGrid } from "@/components/bingo-grid";
-import { ExportImageButton } from "@/components/export-image-button";
 
 export default async function CardGridPage({
   params,
@@ -44,7 +43,15 @@ export default async function CardGridPage({
           <ArrowLeft aria-hidden="true" className="size-5" />
         </Link>
         <h1 className="flex-1 font-display text-2xl font-bold sm:text-3xl">{card.name}</h1>
-        <ExportImageButton cardId={card.id} cardName={card.name} />
+        <a
+          href={`/dashboard/cards/${card.id}/export-image`}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Export ${card.name} as an image`}
+          className="shrink-0 rounded-[var(--radius-sm)] p-1 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ImageDown aria-hidden="true" className="size-5" />
+        </a>
         <Link
           href={`/dashboard/cards/${card.id}/edit`}
           aria-label={`Edit ${card.name}`}
