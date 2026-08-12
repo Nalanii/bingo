@@ -8,7 +8,7 @@ import { BingoGlyph, loadCardFonts } from "@/lib/cards/bingo-mark";
 export const contentType = "image/png";
 
 const CANVAS = 1080;
-const PADDING = 48;
+const PADDING = 36;
 
 // Fixed vertical budget for everything above/below the board, so the board's
 // cell size can be computed to fit the space actually left over rather than
@@ -16,11 +16,11 @@ const PADDING = 48;
 // size with no shrink-to-fit, so this has to be done in JS up front. Kept as
 // tight as legibility allows so the board — the actual point of the image —
 // fills as much of the canvas as possible.
-const TITLE_FONT_SIZE = 46;
-const TITLE_HEIGHT = 108; // room for up to ~2 wrapped lines at TITLE_FONT_SIZE
-const GAP_TITLE_BOARD = 24;
-const GAP_BOARD_FOOTER = 20;
-const FOOTER_HEIGHT = 60;
+const TITLE_FONT_SIZE = 38;
+const TITLE_HEIGHT = 88; // room for up to ~2 wrapped lines at TITLE_FONT_SIZE
+const GAP_TITLE_BOARD = 16;
+const GAP_BOARD_FOOTER = 14;
+const FOOTER_HEIGHT = 50;
 const RESERVED_HEIGHT = TITLE_HEIGHT + GAP_TITLE_BOARD + GAP_BOARD_FOOTER + FOOTER_HEIGHT;
 
 // Dark-mode brand tokens from src/app/globals.css, hardcoded because satori
@@ -29,6 +29,8 @@ const RESERVED_HEIGHT = TITLE_HEIGHT + GAP_TITLE_BOARD + GAP_BOARD_FOOTER + FOOT
 const BACKGROUND = "#171325";
 const FOREGROUND = "#f4eeff";
 const MUTED_FOREGROUND = "#b0a6c9";
+const PRIMARY = "#ff6aa2";
+const SECONDARY = "#9b7bff";
 const ACCENT = "#ffdd6b";
 const ACCENT_FOREGROUND = "#211e2e";
 const SUCCESS = "#4fd6c9";
@@ -105,6 +107,17 @@ function ExportSquare({
   const footerGap = isCounter && captionLabel ? cellSize * 0.02 : 0;
   const footerHeight = countRowHeight + footerGap + captionHeight;
 
+  // -webkit-line-clamp needs a whole-number line count, not an arbitrary
+  // maxHeight — a maxHeight that cuts off *mid*-line (the previous approach)
+  // clips the text without ever reaching the line it would have added "…"
+  // to, so some overflowing labels showed no truncation indicator at all.
+  // Deriving the clamp from the same budget instead keeps the two in sync:
+  // maxHeight always equals exactly `labelLines` whole lines.
+  const labelFontSize = cellSize * 0.11;
+  const labelLineHeight = labelFontSize * 1.15;
+  const labelBudget = cellSize * 0.62 - footerHeight;
+  const labelLines = Math.max(1, Math.floor(labelBudget / labelLineHeight));
+
   return (
     <div
       style={{
@@ -148,23 +161,24 @@ function ExportSquare({
         <div
           style={{
             // -webkit-line-clamp (satori supports it, same as browsers) caps
-            // the label at a fixed number of lines AND paints a trailing "…"
+            // the label at a whole number of lines AND paints a trailing "…"
             // when it truncates, unlike plain overflow:hidden which just cuts
             // the text off with no indication anything was clipped.
             display: "-webkit-box",
             WebkitBoxOrient: "vertical",
-            WebkitLineClamp: 3,
+            WebkitBoxPack: "center",
+            WebkitBoxAlign: "center",
+            WebkitLineClamp: labelLines,
             overflow: "hidden",
             textOverflow: "ellipsis",
-            fontSize: cellSize * 0.13,
+            fontSize: labelFontSize,
             fontWeight: 600,
             lineHeight: 1.15,
             color: textColor,
             textAlign: "center",
+            justifyContent: "center",
             width: "100%",
-            // Leave room above the footer (count/goal and/or caption) so the
-            // (vertically-centered) label can never grow into it.
-            maxHeight: cellSize * 0.62 - footerHeight,
+            maxHeight: labelLines * labelLineHeight,
           }}
         >
           {square.label}
@@ -193,7 +207,7 @@ function ExportSquare({
           }}
         >
           {isCounter && (
-            <div style={{ display: "flex", fontSize: cellSize * 0.11, fontWeight: 700, fontFamily: "Fredoka", color: textColor }}>
+            <div style={{ display: "flex", fontSize: cellSize * 0.095, fontWeight: 700, fontFamily: "Fredoka", color: textColor }}>
               {count}/{square.goal}
             </div>
           )}
@@ -349,12 +363,18 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         }}
       >
         <div style={{ display: "flex", alignItems: "center" }}>
-          <BingoGlyph size={32} />
-          <div style={{ display: "flex", marginLeft: 8, fontFamily: "Fredoka", fontSize: 20, fontWeight: 700, color: FOREGROUND }}>
-            Bingoal
+          <BingoGlyph size={28} />
+          {/* Matches SiteHeader's colored-letter wordmark (src/components/site-header.tsx) exactly. */}
+          <div style={{ display: "flex", marginLeft: 8, fontFamily: "Fredoka", fontSize: 18, fontWeight: 700 }}>
+            <div style={{ display: "flex", color: PRIMARY }}>B</div>
+            <div style={{ display: "flex", color: SECONDARY }}>i</div>
+            <div style={{ display: "flex", color: SUCCESS }}>n</div>
+            <div style={{ display: "flex", color: PRIMARY }}>g</div>
+            <div style={{ display: "flex", color: ACCENT }}>o</div>
+            <div style={{ display: "flex", color: FOREGROUND }}>al</div>
           </div>
         </div>
-        <div style={{ display: "flex", marginTop: 6, fontSize: 14, color: MUTED_FOREGROUND }}>Generated on {generatedOn}</div>
+        <div style={{ display: "flex", marginTop: 5, fontSize: 12, color: MUTED_FOREGROUND }}>Generated on {generatedOn}</div>
       </div>
     </div>,
     { width: CANVAS, height: CANVAS, fonts: await loadCardFonts() },
