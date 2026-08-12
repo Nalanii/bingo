@@ -48,6 +48,8 @@ function isSquareDone(square: Square, count: number): boolean {
   return square.isFreeSpace || count >= square.goal;
 }
 
+const CELL_PADDING = 10;
+
 function ExportSquare({ square, count, cellSize }: { square: Square; count: number; cellSize: number }) {
   const done = isSquareDone(square, count);
   const isCounter = square.kind === "COUNTER" && !square.isFreeSpace;
@@ -67,9 +69,15 @@ function ExportSquare({ square, count, cellSize }: { square: Square; count: numb
       : PRIMARY_TINT_BORDER;
   const textColor = square.isFreeSpace ? ACCENT_FOREGROUND : done ? SUCCESS_FOREGROUND : FOREGROUND;
 
+  // Reserved footer height for the count/goal text on COUNTER squares —
+  // computed as a plain number so it never depends on satori measuring
+  // any wrapped text, only cellSize (see the `isCounter` block below for why).
+  const footerHeight = cellSize * 0.16;
+
   return (
     <div
       style={{
+        position: "relative",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -79,7 +87,7 @@ function ExportSquare({ square, count, cellSize }: { square: Square; count: numb
         borderRadius: 14,
         border: `3px solid ${borderColor}`,
         background,
-        padding: 10,
+        padding: CELL_PADDING,
         textAlign: "center",
         overflow: "hidden",
       }}
@@ -103,35 +111,48 @@ function ExportSquare({ square, count, cellSize }: { square: Square; count: numb
           </div>
         </>
       ) : (
-        <>
-          <div
-            style={{
-              display: "flex",
-              fontSize: cellSize * 0.13,
-              fontWeight: 600,
-              lineHeight: 1.15,
-              color: textColor,
-              maxHeight: cellSize * 0.62,
-              overflow: "hidden",
-            }}
-          >
-            {square.label}
-          </div>
-          {isCounter && (
-            <div
-              style={{
-                display: "flex",
-                marginTop: 6,
-                fontSize: cellSize * 0.11,
-                fontWeight: 700,
-                fontFamily: "Fredoka",
-                color: textColor,
-              }}
-            >
-              {count}/{square.goal}
-            </div>
-          )}
-        </>
+        <div
+          style={{
+            display: "flex",
+            fontSize: cellSize * 0.13,
+            fontWeight: 600,
+            lineHeight: 1.15,
+            color: textColor,
+            // Leave room above the counter footer for COUNTER squares so the
+            // (vertically-centered) label can never grow into it.
+            maxHeight: isCounter ? cellSize * 0.62 - footerHeight : cellSize * 0.62,
+            overflow: "hidden",
+          }}
+        >
+          {square.label}
+        </div>
+      )}
+      {isCounter && (
+        // Absolutely positioned (not a normal-flow sibling below the label)
+        // and placed at a fixed pixel offset derived only from `cellSize` —
+        // satori mismeasures the label's real height when it wraps to
+        // multiple lines, so a flow sibling relying on that measurement to
+        // stack "below" it ends up overlapping the label instead. Anchoring
+        // from a cellSize-only offset sidesteps that entirely. (satori drops
+        // `bottom`/`right` offsets, so this has to be expressed as `top`.)
+        <div
+          style={{
+            position: "absolute",
+            top: cellSize - CELL_PADDING - footerHeight,
+            left: CELL_PADDING,
+            width: cellSize - CELL_PADDING * 2,
+            height: footerHeight,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: cellSize * 0.11,
+            fontWeight: 700,
+            fontFamily: "Fredoka",
+            color: textColor,
+          }}
+        >
+          {count}/{square.goal}
+        </div>
       )}
     </div>
   );
