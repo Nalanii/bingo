@@ -101,10 +101,14 @@ function ExportSquare({
   // Reserved footer space for the count/goal row and/or the completion-date
   // caption on COUNTER/CHECK squares, computed as plain numbers so they
   // never depend on satori measuring any wrapped text (see the absolutely
-  // positioned footer below for why that matters).
-  const countRowHeight = isCounter ? cellSize * 0.14 : 0;
-  const captionHeight = captionLabel ? cellSize * 0.16 : 0;
-  const footerGap = isCounter && captionLabel ? cellSize * 0.02 : 0;
+  // positioned footer below for why that matters). Kept as small as still
+  // legible — a COUNTER square with both a count row AND a caption is the
+  // tightest case, and a bigger footer here directly starves the label's
+  // budget below, forcing an unnecessarily short (or truncated) label for
+  // that combination specifically.
+  const countRowHeight = isCounter ? cellSize * 0.12 : 0;
+  const captionHeight = captionLabel ? cellSize * 0.13 : 0;
+  const footerGap = isCounter && captionLabel ? cellSize * 0.015 : 0;
   const footerHeight = countRowHeight + footerGap + captionHeight;
 
   // -webkit-line-clamp needs a whole-number line count, not an arbitrary
@@ -113,7 +117,7 @@ function ExportSquare({
   // to, so some overflowing labels showed no truncation indicator at all.
   // Deriving the clamp from the same budget instead keeps the two in sync:
   // maxHeight always equals exactly `labelLines` whole lines.
-  const labelFontSize = cellSize * 0.11;
+  const labelFontSize = cellSize * 0.1;
   const labelLineHeight = labelFontSize * 1.15;
   const labelBudget = cellSize * 0.62 - footerHeight;
   const labelLines = Math.max(1, Math.floor(labelBudget / labelLineHeight));
