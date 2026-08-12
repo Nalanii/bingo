@@ -10,6 +10,8 @@
 
 Fun, funky **goal & event bingo cards** you can build, track, and complete.
 
+🔥 Live Link: [bingo-psi-liart.vercel.app](https://bingo-psi-liart.vercel.app/)
+
 > **Status:** core loop is built and working — sign in, build a card, play it,
 > and get celebrated for a BINGO. Active development is now polish and new
 > features (animations, bigger grids, sharing) — see the
