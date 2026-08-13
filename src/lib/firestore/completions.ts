@@ -1,18 +1,20 @@
-import type { QueryDocumentSnapshot, Timestamp } from "firebase-admin/firestore";
+import { FieldValue, type QueryDocumentSnapshot, type Timestamp } from "firebase-admin/firestore";
 import { db } from "@/lib/firebase/admin";
 
 export interface Completion {
   id: string;
   squareId: string;
   completedAt: Date;
+  note?: string;
 }
 
 function toCompletion(doc: QueryDocumentSnapshot): Completion {
-  const data = doc.data() as { squareId: string; completedAt: Timestamp };
+  const data = doc.data() as { squareId: string; completedAt: Timestamp; note?: string };
   return {
     id: doc.id,
     squareId: data.squareId,
     completedAt: data.completedAt.toDate(),
+    ...(data.note !== undefined ? { note: data.note } : {}),
   };
 }
 
@@ -111,4 +113,18 @@ export async function updateCompletionDate(
     .collection("completions")
     .doc(completionId)
     .update({ completedAt });
+}
+
+/** Updates or clears the note on a single completion doc; `null` removes the field entirely. */
+export async function updateCompletionNote(
+  cardId: string,
+  completionId: string,
+  note: string | null,
+): Promise<void> {
+  await db
+    .collection("cards")
+    .doc(cardId)
+    .collection("completions")
+    .doc(completionId)
+    .update({ note: note ? note : FieldValue.delete() });
 }
