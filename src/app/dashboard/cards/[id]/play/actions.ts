@@ -10,6 +10,7 @@ import {
   removeLatestCompletion,
   toggleCompletion,
   updateCompletionDate,
+  updateCompletionNote,
 } from "@/lib/firestore/completions";
 
 export type ToggleCompletionResult =
@@ -18,13 +19,15 @@ export type ToggleCompletionResult =
 
 export type CounterProgressResult = { ok: true; count: number } | { ok: false; error: string };
 
-export type CompletionHistoryEntry = { id: string; completedAt: string };
+export type CompletionHistoryEntry = { id: string; completedAt: string; note?: string };
 
 export type CompletionHistoryResult =
   | { ok: true; entries: CompletionHistoryEntry[] }
   | { ok: false; error: string };
 
 export type UpdateCompletionDateResult = { ok: true } | { ok: false; error: string };
+
+const MAX_NOTE_LENGTH = 280;
 
 /**
  * Resolves and validates a square on a card the current user owns, or an
@@ -146,6 +149,7 @@ export async function getSquareCompletionHistory(
     const entries = completions.map((completion) => ({
       id: completion.id,
       completedAt: completion.completedAt.toISOString(),
+      note: completion.note,
     }));
     return { ok: true, entries };
   } catch (error) {
@@ -182,6 +186,35 @@ export async function updateSquareCompletionDate(
     return { ok: true };
   } catch (error) {
     console.error("updateSquareCompletionDate: failed to update completion date", error);
+    return { ok: false, error: "Something went wrong. Try again." };
+  }
+}
+
+/** Updates or clears the note on a single completion for a square the current user owns. */
+export async function updateSquareCompletionNote(
+  cardId: string,
+  squareId: string,
+  completionId: string,
+  note: string,
+): Promise<UpdateCompletionDateResult> {
+  const resolved = await getOwnedSquare(cardId, squareId);
+  if (!resolved.ok) return resolved;
+
+  const trimmed = note.trim();
+  if (trimmed.length > MAX_NOTE_LENGTH) {
+    return { ok: false, error: "Note is too long (max 280 characters)." };
+  }
+
+  try {
+    const completions = await getCompletionsForSquare(cardId, squareId);
+    if (!completions.some((completion) => completion.id === completionId)) {
+      return { ok: false, error: "Completion not found." };
+    }
+
+    await updateCompletionNote(cardId, completionId, trimmed.length > 0 ? trimmed : null);
+    return { ok: true };
+  } catch (error) {
+    console.error("updateSquareCompletionNote: failed to update completion note", error);
     return { ok: false, error: "Something went wrong. Try again." };
   }
 }
