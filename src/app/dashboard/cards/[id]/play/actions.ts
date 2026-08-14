@@ -1,6 +1,7 @@
 "use server";
 
 import { getUser } from "@/lib/auth";
+import { MAX_NOTE_LENGTH } from "@/lib/completion-notes";
 import { getCard, type Square } from "@/lib/firestore/cards";
 import {
   addCompletion,
@@ -26,8 +27,6 @@ export type CompletionHistoryResult =
   | { ok: false; error: string };
 
 export type UpdateCompletionDateResult = { ok: true } | { ok: false; error: string };
-
-export const MAX_NOTE_LENGTH = 280;
 
 /**
  * Resolves and validates a square on a card the current user owns, or an

@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { Square } from "@/lib/firestore/cards";
 import {
   getSquareCompletionHistory,
   updateSquareCompletionDate,
+  updateSquareCompletionNote,
   type CompletionHistoryEntry,
+  type UpdateCompletionDateResult,
 } from "@/app/dashboard/cards/[id]/play/actions";
+import { MAX_NOTE_LENGTH } from "@/lib/completion-notes";
 import { useDialogA11y } from "@/lib/use-dialog-a11y";
 import { useExitAnimation } from "@/lib/use-exit-animation";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -56,6 +59,7 @@ export function CompletionHistoryModal({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [draftValues, setDraftValues] = useState<Record<string, string>>({});
+  const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
@@ -86,6 +90,9 @@ export function CompletionHistoryModal({
             result.entries.map((entry) => [entry.id, isoToDateInputValue(entry.completedAt)]),
           ),
         );
+        setDraftNotes(
+          Object.fromEntries(result.entries.map((entry) => [entry.id, entry.note ?? ""])),
+        );
         setRowErrors({});
       }
       setLoading(false);
@@ -99,12 +106,19 @@ export function CompletionHistoryModal({
     };
   }, [cardId, square.id]);
 
-  function isDirty(entry: CompletionHistoryEntry): boolean {
+  function isDateDirty(entry: CompletionHistoryEntry): boolean {
     const draftValue = draftValues[entry.id];
     return draftValue !== undefined && draftValue !== isoToDateInputValue(entry.completedAt);
   }
 
-  const dirtyEntries = (entries ?? []).filter(isDirty);
+  function isNoteDirty(entry: CompletionHistoryEntry): boolean {
+    const draftNote = draftNotes[entry.id];
+    return draftNote !== undefined && draftNote !== (entry.note ?? "");
+  }
+
+  const dirtyEntries = (entries ?? []).filter(
+    (entry) => isDateDirty(entry) || isNoteDirty(entry),
+  );
 
   // `entries` itself stays in the server's newest-first order (bingo-grid.tsx
   // relies on entries[0] being the most recent completion); this is just a
@@ -129,13 +143,24 @@ export function CompletionHistoryModal({
   async function handleSaveAll() {
     if (saving || dirtyEntries.length === 0) return;
 
-    const invalidEntries = dirtyEntries.filter(
-      (entry) => !isValidDateInputValue(draftValues[entry.id]),
+    const invalidDateEntries = dirtyEntries.filter(
+      (entry) => isDateDirty(entry) && !isValidDateInputValue(draftValues[entry.id]),
     );
-    if (invalidEntries.length > 0) {
-      setRowErrors(
-        Object.fromEntries(invalidEntries.map((entry) => [entry.id, "Enter a valid date."])),
-      );
+    const invalidNoteEntries = dirtyEntries.filter(
+      (entry) => isNoteDirty(entry) && draftNotes[entry.id].trim().length > MAX_NOTE_LENGTH,
+    );
+    if (invalidDateEntries.length > 0 || invalidNoteEntries.length > 0) {
+      setRowErrors({
+        ...Object.fromEntries(
+          invalidDateEntries.map((entry) => [entry.id, "Enter a valid date."]),
+        ),
+        ...Object.fromEntries(
+          invalidNoteEntries.map((entry) => [
+            entry.id,
+            "Note is too long (max 280 characters).",
+          ]),
+        ),
+      });
       return;
     }
 
@@ -144,13 +169,28 @@ export function CompletionHistoryModal({
     setRowErrors({});
 
     try {
-      const outcomes = await Promise.all(
-        dirtyEntries.map(async (entry) => {
-          const isoValue = dateInputValueToIso(draftValues[entry.id]);
-          const result = await updateSquareCompletionDate(cardId, square.id, entry.id, isoValue);
-          return { entry, result };
-        }),
-      );
+      const updates: Promise<{ entry: CompletionHistoryEntry; result: UpdateCompletionDateResult }>[] =
+        [];
+      for (const entry of dirtyEntries) {
+        if (isDateDirty(entry)) {
+          updates.push(
+            updateSquareCompletionDate(
+              cardId,
+              square.id,
+              entry.id,
+              dateInputValueToIso(draftValues[entry.id]),
+            ).then((result) => ({ entry, result })),
+          );
+        }
+        if (isNoteDirty(entry)) {
+          updates.push(
+            updateSquareCompletionNote(cardId, square.id, entry.id, draftNotes[entry.id]).then(
+              (result) => ({ entry, result }),
+            ),
+          );
+        }
+      }
+      const outcomes = await Promise.all(updates);
 
       const failures = outcomes.filter(({ result }) => !result.ok);
       if (failures.length > 0) {
@@ -171,10 +211,21 @@ export function CompletionHistoryModal({
         return;
       }
 
+      setDraftNotes(
+        Object.fromEntries(refreshed.entries.map((entry) => [entry.id, entry.note ?? ""])),
+      );
       onEntriesChange?.(refreshed.entries);
       requestClose(onClose);
     } finally {
       setSaving(false);
+    }
+  }
+
+  /** Ctrl/Cmd+Enter saves from within a date input or note textarea; plain Enter is left alone. */
+  function handleSaveShortcut(event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+      event.preventDefault();
+      handleSaveAll();
     }
   }
 
@@ -238,6 +289,7 @@ export function CompletionHistoryModal({
             <ul className="flex flex-col gap-3">
               {entriesAscending.map((entry, index) => {
                 const draftValue = draftValues[entry.id] ?? isoToDateInputValue(entry.completedAt);
+                const draftNote = draftNotes[entry.id] ?? (entry.note ?? "");
                 const rowError = rowErrors[entry.id];
 
                 return (
@@ -251,7 +303,7 @@ export function CompletionHistoryModal({
                     >
                       {index + 1}.
                     </span>
-                    <div className="flex flex-col gap-1">
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
                       <input
                         type="date"
                         aria-label={`Completion date, entry ${index + 1} of ${entriesAscending.length}`}
@@ -260,12 +312,20 @@ export function CompletionHistoryModal({
                         onChange={(event) =>
                           setDraftValues((prev) => ({ ...prev, [entry.id]: event.target.value }))
                         }
-                        onKeyDown={(event) => {
-                          if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-                            event.preventDefault();
-                            handleSaveAll();
-                          }
-                        }}
+                        onKeyDown={handleSaveShortcut}
+                        disabled={saving}
+                      />
+                      <textarea
+                        aria-label={`Note, entry ${index + 1} of ${entriesAscending.length}`}
+                        className="border-control-border bg-card text-card-foreground w-full rounded-[var(--radius-sm)] border px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        placeholder="Add a note…"
+                        maxLength={MAX_NOTE_LENGTH}
+                        rows={2}
+                        value={draftNote}
+                        onChange={(event) =>
+                          setDraftNotes((prev) => ({ ...prev, [entry.id]: event.target.value }))
+                        }
+                        onKeyDown={handleSaveShortcut}
                         disabled={saving}
                       />
                       {rowError && (
