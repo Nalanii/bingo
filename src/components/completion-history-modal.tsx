@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { Square } from "@/lib/firestore/cards";
 import {
   getSquareCompletionHistory,
@@ -107,6 +107,19 @@ export function CompletionHistoryModal({
       cancelled = true;
     };
   }, [cardId, square.id]);
+
+  // Note textareas start at one row and grow to fit their content (see
+  // `data-autogrow` below); this re-measures them whenever draft note text
+  // changes, including the initial values loaded from Firestore.
+  useLayoutEffect(() => {
+    const textareas = dialogRef.current?.querySelectorAll<HTMLTextAreaElement>(
+      "textarea[data-autogrow]",
+    );
+    textareas?.forEach((textarea) => {
+      textarea.style.height = "auto";
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    });
+  }, [draftNotes]);
 
   function isDateDirty(entry: CompletionHistoryEntry): boolean {
     const draftValue = draftValues[entry.id];
@@ -259,7 +272,7 @@ export function CompletionHistoryModal({
         tabIndex={-1}
         data-state={state}
         className={cn(
-          "border-border bg-card text-card-foreground mx-4 flex max-h-[80vh] w-fit max-w-sm min-w-[16rem] flex-col gap-3 rounded-[var(--radius-sm)] border-2 p-4 focus-visible:outline-none",
+          "border-border bg-card text-card-foreground mx-4 flex max-h-[80vh] w-full max-w-md flex-col gap-3 rounded-[var(--radius-sm)] border-2 p-4 focus-visible:outline-none sm:max-w-lg",
           state === "open"
             ? "[animation:pop-in_150ms_ease-out]"
             : "[animation:pop-out_150ms_ease-in]",
@@ -304,19 +317,22 @@ export function CompletionHistoryModal({
                 const draftNote = draftNotes[entry.id] ?? (entry.note ?? "");
                 const dateError = dateErrors[entry.id];
                 const noteError = noteErrors[entry.id];
+                // Character count stays hidden until a note is most of the
+                // way to the limit, so it doesn't clutter every short note.
+                const showCounter = draftNote.length >= MAX_NOTE_LENGTH * 0.8;
 
                 return (
                   <li
                     key={entry.id}
-                    className="bg-muted flex w-full items-center gap-2 rounded-[var(--radius-sm)] p-2"
+                    className="bg-muted flex w-full items-start gap-2 rounded-[var(--radius-sm)] p-2"
                   >
                     <span
                       aria-hidden="true"
-                      className="text-muted-foreground w-4 shrink-0 text-right text-xs font-semibold"
+                      className="text-muted-foreground w-4 shrink-0 pt-1.5 text-right text-xs font-semibold"
                     >
                       {index + 1}.
                     </span>
-                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <div className="flex shrink-0 flex-col gap-1">
                       <input
                         type="date"
                         aria-label={`Completion date, entry ${index + 1} of ${entriesAscending.length}`}
@@ -333,12 +349,15 @@ export function CompletionHistoryModal({
                           {dateError}
                         </p>
                       )}
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
                       <textarea
                         aria-label={`Note, entry ${index + 1} of ${entriesAscending.length}`}
-                        className="border-control-border bg-card text-card-foreground w-full rounded-[var(--radius-sm)] border px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        className="border-control-border bg-card text-card-foreground w-full resize-none overflow-hidden rounded-[var(--radius-sm)] border px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                         placeholder="Add a note…"
                         maxLength={MAX_NOTE_LENGTH}
-                        rows={2}
+                        rows={1}
+                        data-autogrow
                         value={draftNote}
                         onChange={(event) =>
                           setDraftNotes((prev) => ({ ...prev, [entry.id]: event.target.value }))
@@ -346,16 +365,16 @@ export function CompletionHistoryModal({
                         onKeyDown={handleSaveShortcut}
                         disabled={saving}
                       />
-                      <div className="flex items-center justify-between gap-2">
-                        {noteError && (
-                          <p role="alert" className="text-destructive text-xs">
-                            {noteError}
-                          </p>
-                        )}
-                        <span className="text-muted-foreground ml-auto shrink-0 text-xs">
+                      {noteError && (
+                        <p role="alert" className="text-destructive text-xs">
+                          {noteError}
+                        </p>
+                      )}
+                      {showCounter && (
+                        <span className="text-muted-foreground self-end text-xs">
                           {draftNote.length}/{MAX_NOTE_LENGTH}
                         </span>
-                      </div>
+                      )}
                     </div>
                   </li>
                 );

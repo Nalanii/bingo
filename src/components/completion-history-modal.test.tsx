@@ -153,14 +153,15 @@ describe("CompletionHistoryModal", () => {
     expect(await screen.findByText("Bad note.")).toBeInTheDocument();
   });
 
-  it("shows a live character counter for the note textarea based on the current draft value", async () => {
+  it("hides the character counter for a short note and shows it once the note nears the length limit", async () => {
     renderModal();
     const { noteTextarea } = await getControls();
 
-    expect(screen.getByText(`${initialNote.length}/${MAX_NOTE_LENGTH}`)).toBeInTheDocument();
+    expect(screen.queryByText(`${initialNote.length}/${MAX_NOTE_LENGTH}`)).not.toBeInTheDocument();
 
-    fireEvent.change(noteTextarea, { target: { value: "abc" } });
+    const longNote = "a".repeat(Math.ceil(MAX_NOTE_LENGTH * 0.8));
+    fireEvent.change(noteTextarea, { target: { value: longNote } });
 
-    expect(screen.getByText(`3/${MAX_NOTE_LENGTH}`)).toBeInTheDocument();
+    expect(screen.getByText(`${longNote.length}/${MAX_NOTE_LENGTH}`)).toBeInTheDocument();
   });
 });
