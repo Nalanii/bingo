@@ -62,7 +62,8 @@ export function CompletionHistoryModal({
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  const [dateErrors, setDateErrors] = useState<Record<string, string>>({});
+  const [noteErrors, setNoteErrors] = useState<Record<string, string>>({});
   const [statusMessage, setStatusMessage] = useState("");
 
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
@@ -93,7 +94,8 @@ export function CompletionHistoryModal({
         setDraftNotes(
           Object.fromEntries(result.entries.map((entry) => [entry.id, entry.note ?? ""])),
         );
-        setRowErrors({});
+        setDateErrors({});
+        setNoteErrors({});
       }
       setLoading(false);
       setStatusMessage("");
@@ -150,27 +152,31 @@ export function CompletionHistoryModal({
       (entry) => isNoteDirty(entry) && draftNotes[entry.id].trim().length > MAX_NOTE_LENGTH,
     );
     if (invalidDateEntries.length > 0 || invalidNoteEntries.length > 0) {
-      setRowErrors({
-        ...Object.fromEntries(
-          invalidDateEntries.map((entry) => [entry.id, "Enter a valid date."]),
-        ),
-        ...Object.fromEntries(
+      setDateErrors(
+        Object.fromEntries(invalidDateEntries.map((entry) => [entry.id, "Enter a valid date."])),
+      );
+      setNoteErrors(
+        Object.fromEntries(
           invalidNoteEntries.map((entry) => [
             entry.id,
-            "Note is too long (max 280 characters).",
+            `Note is too long (max ${MAX_NOTE_LENGTH} characters).`,
           ]),
         ),
-      });
+      );
       return;
     }
 
     setSaving(true);
     setSaveError(null);
-    setRowErrors({});
+    setDateErrors({});
+    setNoteErrors({});
 
     try {
-      const updates: Promise<{ entry: CompletionHistoryEntry; result: UpdateCompletionDateResult }>[] =
-        [];
+      const updates: Promise<{
+        entry: CompletionHistoryEntry;
+        kind: "date" | "note";
+        result: UpdateCompletionDateResult;
+      }>[] = [];
       for (const entry of dirtyEntries) {
         if (isDateDirty(entry)) {
           updates.push(
@@ -179,13 +185,13 @@ export function CompletionHistoryModal({
               square.id,
               entry.id,
               dateInputValueToIso(draftValues[entry.id]),
-            ).then((result) => ({ entry, result })),
+            ).then((result) => ({ entry, kind: "date" as const, result })),
           );
         }
         if (isNoteDirty(entry)) {
           updates.push(
             updateSquareCompletionNote(cardId, square.id, entry.id, draftNotes[entry.id]).then(
-              (result) => ({ entry, result }),
+              (result) => ({ entry, kind: "note" as const, result }),
             ),
           );
         }
@@ -194,12 +200,18 @@ export function CompletionHistoryModal({
 
       const failures = outcomes.filter(({ result }) => !result.ok);
       if (failures.length > 0) {
-        setRowErrors(
+        setDateErrors(
           Object.fromEntries(
-            failures.map(({ entry, result }) => [
-              entry.id,
-              result.ok ? "" : result.error,
-            ]),
+            failures
+              .filter(({ kind }) => kind === "date")
+              .map(({ entry, result }) => [entry.id, result.ok ? "" : result.error]),
+          ),
+        );
+        setNoteErrors(
+          Object.fromEntries(
+            failures
+              .filter(({ kind }) => kind === "note")
+              .map(({ entry, result }) => [entry.id, result.ok ? "" : result.error]),
           ),
         );
         return;
@@ -290,7 +302,8 @@ export function CompletionHistoryModal({
               {entriesAscending.map((entry, index) => {
                 const draftValue = draftValues[entry.id] ?? isoToDateInputValue(entry.completedAt);
                 const draftNote = draftNotes[entry.id] ?? (entry.note ?? "");
-                const rowError = rowErrors[entry.id];
+                const dateError = dateErrors[entry.id];
+                const noteError = noteErrors[entry.id];
 
                 return (
                   <li
@@ -315,6 +328,11 @@ export function CompletionHistoryModal({
                         onKeyDown={handleSaveShortcut}
                         disabled={saving}
                       />
+                      {dateError && (
+                        <p role="alert" className="text-destructive text-xs">
+                          {dateError}
+                        </p>
+                      )}
                       <textarea
                         aria-label={`Note, entry ${index + 1} of ${entriesAscending.length}`}
                         className="border-control-border bg-card text-card-foreground w-full rounded-[var(--radius-sm)] border px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -328,11 +346,16 @@ export function CompletionHistoryModal({
                         onKeyDown={handleSaveShortcut}
                         disabled={saving}
                       />
-                      {rowError && (
-                        <p role="alert" className="text-destructive text-xs">
-                          {rowError}
-                        </p>
-                      )}
+                      <div className="flex items-center justify-between gap-2">
+                        {noteError && (
+                          <p role="alert" className="text-destructive text-xs">
+                            {noteError}
+                          </p>
+                        )}
+                        <span className="text-muted-foreground ml-auto shrink-0 text-xs">
+                          {draftNote.length}/{MAX_NOTE_LENGTH}
+                        </span>
+                      </div>
                     </div>
                   </li>
                 );

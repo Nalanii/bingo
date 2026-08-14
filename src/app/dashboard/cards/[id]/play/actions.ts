@@ -201,7 +201,7 @@ export async function updateSquareCompletionNote(
 
   const trimmed = note.trim();
   if (trimmed.length > MAX_NOTE_LENGTH) {
-    return { ok: false, error: "Note is too long (max 280 characters)." };
+    return { ok: false, error: `Note is too long (max ${MAX_NOTE_LENGTH} characters).` };
   }
 
   try {
