@@ -27,7 +27,7 @@ export type CompletionHistoryResult =
 
 export type UpdateCompletionDateResult = { ok: true } | { ok: false; error: string };
 
-const MAX_NOTE_LENGTH = 280;
+export const MAX_NOTE_LENGTH = 280;
 
 /**
  * Resolves and validates a square on a card the current user owns, or an
