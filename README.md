@@ -1,9 +1,9 @@
 # 🎉 Bingoal
 
-![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
-![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16.3-grey?style=for-the-badge&logo=next.js&logoColor=white&labelColor=000000)
+![React](https://img.shields.io/badge/React-19.2-grey?style=for-the-badge&logo=react&logoColor=black&labelColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-grey?style=for-the-badge&logo=typescript&logoColor=white&labelColor=3178C6)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-grey?style=for-the-badge&logo=tailwindcss&logoColor=white&labelColor=06B6D4)
 ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)
