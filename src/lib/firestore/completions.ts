@@ -6,15 +6,22 @@ export interface Completion {
   squareId: string;
   completedAt: Date;
   note?: string;
+  photoPath?: string;
 }
 
 function toCompletion(doc: QueryDocumentSnapshot): Completion {
-  const data = doc.data() as { squareId: string; completedAt: Timestamp; note?: string };
+  const data = doc.data() as {
+    squareId: string;
+    completedAt: Timestamp;
+    note?: string;
+    photoPath?: string;
+  };
   return {
     id: doc.id,
     squareId: data.squareId,
     completedAt: data.completedAt.toDate(),
     ...(data.note !== undefined ? { note: data.note } : {}),
+    ...(data.photoPath !== undefined ? { photoPath: data.photoPath } : {}),
   };
 }
 
@@ -127,4 +134,18 @@ export async function updateCompletionNote(
     .collection("completions")
     .doc(completionId)
     .update({ note: note ? note : FieldValue.delete() });
+}
+
+/** Updates or clears the photo path on a single completion doc; `null` removes the field entirely. */
+export async function updateCompletionPhoto(
+  cardId: string,
+  completionId: string,
+  photoPath: string | null,
+): Promise<void> {
+  await db
+    .collection("cards")
+    .doc(cardId)
+    .collection("completions")
+    .doc(completionId)
+    .update({ photoPath: photoPath ? photoPath : FieldValue.delete() });
 }
