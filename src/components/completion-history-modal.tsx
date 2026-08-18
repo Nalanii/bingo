@@ -8,7 +8,7 @@ import {
   type ChangeEvent,
   type KeyboardEvent,
 } from "react";
-import { Camera, ImagePlus, Trash2, X } from "lucide-react";
+import { Camera, Check, ImagePlus, Trash2, X } from "lucide-react";
 import type { Square } from "@/lib/firestore/cards";
 import {
   getSquareCompletionHistory,
@@ -85,12 +85,33 @@ export function CompletionHistoryModal({
   const [photoErrors, setPhotoErrors] = useState<Record<string, string>>({});
   const [activePhotoEntryId, setActivePhotoEntryId] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  // Photos save immediately (unlike date/note, which wait for the Save
+  // button), so this is the only feedback a user gets that the upload or
+  // removal actually persisted — it flashes briefly, then clears itself.
+  const [photoSaved, setPhotoSaved] = useState<Record<string, boolean>>({});
 
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const { state, requestClose } = useExitAnimation();
 
   const dialogRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoSavedTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  useEffect(() => {
+    const timeouts = photoSavedTimeouts.current;
+    return () => {
+      Object.values(timeouts).forEach(clearTimeout);
+    };
+  }, []);
+
+  /** Briefly flags an entry as "just saved", auto-clearing after a couple of seconds. */
+  function flashPhotoSaved(entryId: string) {
+    clearTimeout(photoSavedTimeouts.current[entryId]);
+    setPhotoSaved((prev) => ({ ...prev, [entryId]: true }));
+    photoSavedTimeouts.current[entryId] = setTimeout(() => {
+      setPhotoSaved((prev) => ({ ...prev, [entryId]: false }));
+    }, 2000);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -322,6 +343,7 @@ export function CompletionHistoryModal({
           entry.id === entryId ? { ...entry, photoUrl: result.photoUrl } : entry,
         ) ?? prev,
     );
+    flashPhotoSaved(entryId);
   }
 
   async function handleRemovePhoto(entryId: string) {
@@ -343,6 +365,7 @@ export function CompletionHistoryModal({
         prev?.map((entry) => (entry.id === entryId ? { ...entry, photoUrl: undefined } : entry)) ??
         prev,
     );
+    flashPhotoSaved(entryId);
   }
 
   return (
@@ -525,6 +548,15 @@ export function CompletionHistoryModal({
                             <Trash2 className="h-3 w-3" />
                             Remove
                           </button>
+                        )}
+                        {photoSaved[entry.id] && (
+                          <span
+                            role="status"
+                            className="text-muted-foreground flex items-center gap-1 text-xs [animation:fade-in_150ms_ease-out]"
+                          >
+                            <Check className="h-3 w-3" />
+                            Saved
+                          </span>
                         )}
                       </div>
                       {photoErrors[entry.id] && (

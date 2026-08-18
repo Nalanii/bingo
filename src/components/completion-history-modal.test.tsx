@@ -196,6 +196,21 @@ describe("CompletionHistoryModal", () => {
     expect(await screen.findByAltText("Photo for entry 1")).toBeInTheDocument();
   });
 
+  it("shows a transient Saved confirmation after a photo upload, since photos aren't part of the Save button flow", async () => {
+    mockUploadPhoto.mockResolvedValue({ ok: true, photoUrl: "https://storage.example/photo.png" });
+    renderModal();
+    const { saveButton } = await getControls();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add photo" }));
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [makeImageFile("photo.png", 1024)] } });
+
+    await waitFor(() => expect(mockUploadPhoto).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Saved")).toBeInTheDocument();
+    // Uploading a photo alone shouldn't dirty the date/note draft state.
+    expect(saveButton).toBeDisabled();
+  });
+
   it("rejects an oversized photo before calling the upload action", async () => {
     renderModal();
     await getControls();
