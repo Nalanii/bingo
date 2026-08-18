@@ -1,4 +1,6 @@
 import { db } from "@/lib/firebase/admin";
+import { getCompletions } from "@/lib/firestore/completions";
+import { deleteCompletionPhoto } from "@/lib/firebase/storage";
 
 export type SquareKind = "CHECK" | "COUNTER";
 export type CardLayout = "RANDOM" | "SET";
@@ -103,9 +105,27 @@ export async function updateCard(
   });
 }
 
-/** Deletes a card doc. Squares are embedded on the doc, so no cleanup elsewhere is needed. */
+/**
+ * Deletes a card doc along with its completions subcollection, since Firestore
+ * doesn't cascade-delete subcollections on its own. Any completion photos in
+ * Storage are deleted first so they don't leak once the docs referencing them
+ * are gone.
+ */
 export async function deleteCard(cardId: string): Promise<void> {
-  await db.collection("cards").doc(cardId).delete();
+  const completions = await getCompletions(cardId);
+
+  await Promise.all(
+    completions
+      .filter((completion) => completion.photoPath !== undefined)
+      .map((completion) => deleteCompletionPhoto(completion.photoPath as string)),
+  );
+
+  const batch = db.batch();
+  const cardRef = db.collection("cards").doc(cardId);
+  completions.forEach((completion) => batch.delete(cardRef.collection("completions").doc(completion.id)));
+  batch.delete(cardRef);
+
+  await batch.commit();
 }
 
 /** Lists a user's cards, newest-updated first, with each card's square count. */
