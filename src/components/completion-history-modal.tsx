@@ -1,18 +1,34 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from "react";
+import { Camera, ImagePlus, Trash2, X } from "lucide-react";
 import type { Square } from "@/lib/firestore/cards";
 import {
   getSquareCompletionHistory,
+  removeSquareCompletionPhoto,
   updateSquareCompletionDate,
   updateSquareCompletionNote,
+  uploadSquareCompletionPhoto,
   type CompletionHistoryEntry,
   type UpdateCompletionDateResult,
 } from "@/app/dashboard/cards/[id]/play/actions";
 import { MAX_NOTE_LENGTH } from "@/lib/completion-notes";
+import {
+  ALLOWED_PHOTO_TYPES_LABEL,
+  MAX_PHOTO_SIZE_BYTES,
+  isAllowedPhotoType,
+} from "@/lib/completion-photos";
 import { useDialogA11y } from "@/lib/use-dialog-a11y";
 import { useExitAnimation } from "@/lib/use-exit-animation";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
 interface CompletionHistoryModalProps {
@@ -65,11 +81,16 @@ export function CompletionHistoryModal({
   const [dateErrors, setDateErrors] = useState<Record<string, string>>({});
   const [noteErrors, setNoteErrors] = useState<Record<string, string>>({});
   const [statusMessage, setStatusMessage] = useState("");
+  const [photoUploading, setPhotoUploading] = useState<Record<string, boolean>>({});
+  const [photoErrors, setPhotoErrors] = useState<Record<string, string>>({});
+  const [activePhotoEntryId, setActivePhotoEntryId] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const { state, requestClose } = useExitAnimation();
 
   const dialogRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -254,6 +275,76 @@ export function CompletionHistoryModal({
     }
   }
 
+  function openFilePicker(entryId: string) {
+    setActivePhotoEntryId(entryId);
+    fileInputRef.current?.click();
+  }
+
+  async function handlePhotoFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    const entryId = activePhotoEntryId;
+    event.target.value = "";
+    if (!file || !entryId) return;
+
+    if (!isAllowedPhotoType(file.type)) {
+      setPhotoErrors((prev) => ({
+        ...prev,
+        [entryId]: `Photo must be a ${ALLOWED_PHOTO_TYPES_LABEL} image.`,
+      }));
+      return;
+    }
+    if (file.size > MAX_PHOTO_SIZE_BYTES) {
+      setPhotoErrors((prev) => ({
+        ...prev,
+        [entryId]: `Photo is too large (max ${MAX_PHOTO_SIZE_BYTES / (1024 * 1024)}MB).`,
+      }));
+      return;
+    }
+
+    setPhotoErrors((prev) =>
+      Object.fromEntries(Object.entries(prev).filter(([id]) => id !== entryId)),
+    );
+    setPhotoUploading((prev) => ({ ...prev, [entryId]: true }));
+
+    const formData = new FormData();
+    formData.append("photo", file);
+    const result = await uploadSquareCompletionPhoto(cardId, square.id, entryId, formData);
+
+    setPhotoUploading((prev) => ({ ...prev, [entryId]: false }));
+    if (!result.ok) {
+      setPhotoErrors((prev) => ({ ...prev, [entryId]: result.error }));
+      return;
+    }
+
+    setEntries(
+      (prev) =>
+        prev?.map((entry) =>
+          entry.id === entryId ? { ...entry, photoUrl: result.photoUrl } : entry,
+        ) ?? prev,
+    );
+  }
+
+  async function handleRemovePhoto(entryId: string) {
+    setPhotoErrors((prev) =>
+      Object.fromEntries(Object.entries(prev).filter(([id]) => id !== entryId)),
+    );
+    setPhotoUploading((prev) => ({ ...prev, [entryId]: true }));
+
+    const result = await removeSquareCompletionPhoto(cardId, square.id, entryId);
+
+    setPhotoUploading((prev) => ({ ...prev, [entryId]: false }));
+    if (!result.ok) {
+      setPhotoErrors((prev) => ({ ...prev, [entryId]: result.error }));
+      return;
+    }
+
+    setEntries(
+      (prev) =>
+        prev?.map((entry) => (entry.id === entryId ? { ...entry, photoUrl: undefined } : entry)) ??
+        prev,
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -393,6 +484,54 @@ export function CompletionHistoryModal({
                           {draftNote.length}/{MAX_NOTE_LENGTH}
                         </span>
                       )}
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        {entry.photoUrl && (
+                          <button
+                            type="button"
+                            aria-label={`View photo, entry ${index + 1} of ${entriesAscending.length}`}
+                            className="border-control-border overflow-hidden rounded-[var(--radius-sm)] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                            onClick={() => setLightboxUrl(entry.photoUrl ?? null)}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element -- signed Firebase Storage URL, not a static asset next/image's optimizer would help with. */}
+                            <img
+                              src={entry.photoUrl}
+                              alt={`Photo for entry ${index + 1}`}
+                              className="h-12 w-12 object-cover"
+                            />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="border-control-border bg-card text-card-foreground flex cursor-pointer items-center gap-1 rounded-[var(--radius-sm)] border px-2 py-1 text-xs font-medium hover:border-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-40"
+                          disabled={photoUploading[entry.id]}
+                          onClick={() => openFilePicker(entry.id)}
+                        >
+                          {photoUploading[entry.id] ? (
+                            <Spinner className="h-3 w-3" />
+                          ) : entry.photoUrl ? (
+                            <ImagePlus className="h-3 w-3" />
+                          ) : (
+                            <Camera className="h-3 w-3" />
+                          )}
+                          {entry.photoUrl ? "Replace photo" : "Add photo"}
+                        </button>
+                        {entry.photoUrl && (
+                          <button
+                            type="button"
+                            className="text-destructive flex cursor-pointer items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-40"
+                            disabled={photoUploading[entry.id]}
+                            onClick={() => handleRemovePhoto(entry.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      {photoErrors[entry.id] && (
+                        <p role="alert" className="text-destructive text-xs">
+                          {photoErrors[entry.id]}
+                        </p>
+                      )}
                     </div>
                   </li>
                 );
@@ -418,7 +557,40 @@ export function CompletionHistoryModal({
             </button>
           </div>
         )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="hidden"
+          onChange={handlePhotoFileChange}
+        />
       </div>
+
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- signed Firebase Storage URL, not a static asset next/image's optimizer would help with. */}
+          <img
+            src={lightboxUrl}
+            alt="Completion photo"
+            className="max-h-full max-w-full rounded-[var(--radius-sm)]"
+          />
+          <button
+            type="button"
+            aria-label="Close photo"
+            className="border-control-border bg-card text-card-foreground absolute right-4 top-4 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            onClick={(event) => {
+              event.stopPropagation();
+              setLightboxUrl(null);
+            }}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {showDiscardConfirm && (
         <ConfirmDialog
