@@ -568,28 +568,7 @@ export function CompletionHistoryModal({
       </div>
 
       {lightboxUrl && (
-        <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setLightboxUrl(null)}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element -- signed Firebase Storage URL, not a static asset next/image's optimizer would help with. */}
-          <img
-            src={lightboxUrl}
-            alt="Completion photo"
-            className="max-h-full max-w-full rounded-[var(--radius-sm)]"
-          />
-          <button
-            type="button"
-            aria-label="Close photo"
-            className="border-control-border bg-card text-card-foreground absolute right-4 top-4 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            onClick={(event) => {
-              event.stopPropagation();
-              setLightboxUrl(null);
-            }}
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+        <PhotoLightbox photoUrl={lightboxUrl} onClose={() => setLightboxUrl(null)} />
       )}
 
       {showDiscardConfirm && (
@@ -609,6 +588,48 @@ export function CompletionHistoryModal({
           onConfirm={() => requestClose(onClose)}
         />
       )}
+    </div>
+  );
+}
+
+interface PhotoLightboxProps {
+  photoUrl: string;
+  onClose: () => void;
+}
+
+/** Fullscreen overlay showing a single completion photo at full size. */
+function PhotoLightbox({ photoUrl, onClose }: PhotoLightboxProps) {
+  const lightboxRef = useRef<HTMLDivElement>(null);
+  useDialogA11y(lightboxRef, onClose);
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4"
+      onClick={onClose}
+    >
+      <div
+        ref={lightboxRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Completion photo"
+        tabIndex={-1}
+        onClick={(event) => event.stopPropagation()}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- signed Firebase Storage URL, not a static asset next/image's optimizer would help with. */}
+        <img
+          src={photoUrl}
+          alt="Completion photo"
+          className="max-h-full max-w-full rounded-[var(--radius-sm)]"
+        />
+        <button
+          type="button"
+          aria-label="Close photo"
+          className="border-control-border bg-card text-card-foreground absolute right-4 top-4 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          onClick={onClose}
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }
