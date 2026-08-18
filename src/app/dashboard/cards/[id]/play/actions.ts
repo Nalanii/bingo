@@ -88,7 +88,13 @@ export async function toggleSquareCompletion(
   }
 
   try {
+    const existing = await getCompletionsForSquare(cardId, squareId);
     const completed = await toggleCompletion(cardId, squareId);
+
+    if (!completed && existing[0]?.photoPath) {
+      await deleteCompletionPhoto(existing[0].photoPath);
+    }
+
     return { ok: true, completed };
   } catch (error) {
     console.error("toggleSquareCompletion: failed to toggle completion", error);
@@ -147,7 +153,13 @@ export async function decrementSquareProgress(
       return { ok: false, error: "No progress to remove yet." };
     }
 
+    const removedPhotoPath = sorted[0].data().photoPath as string | undefined;
     const count = await removeLatestCompletion(sorted);
+
+    if (removedPhotoPath) {
+      await deleteCompletionPhoto(removedPhotoPath);
+    }
+
     return { ok: true, count };
   } catch (error) {
     console.error("decrementSquareProgress: failed to remove completion", error);
