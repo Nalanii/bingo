@@ -2,6 +2,7 @@
 
 import { getUser } from "@/lib/auth";
 import { MAX_NOTE_LENGTH } from "@/lib/completion-notes";
+import { ALLOWED_PHOTO_TYPES_LABEL, MAX_PHOTO_SIZE_BYTES, isAllowedPhotoType } from "@/lib/completion-photos";
 import { getCard, type Square } from "@/lib/firestore/cards";
 import {
   addCompletion,
@@ -12,7 +13,15 @@ import {
   toggleCompletion,
   updateCompletionDate,
   updateCompletionNote,
+  updateCompletionPhoto,
+  type Completion,
 } from "@/lib/firestore/completions";
+import {
+  completionPhotoPath,
+  deleteCompletionPhoto,
+  getCompletionPhotoSignedUrl,
+  uploadCompletionPhoto,
+} from "@/lib/firebase/storage";
 
 export type ToggleCompletionResult =
   | { ok: true; completed: boolean }
@@ -20,13 +29,24 @@ export type ToggleCompletionResult =
 
 export type CounterProgressResult = { ok: true; count: number } | { ok: false; error: string };
 
-export type CompletionHistoryEntry = { id: string; completedAt: string; note?: string };
+export type CompletionHistoryEntry = {
+  id: string;
+  completedAt: string;
+  note?: string;
+  photoUrl?: string;
+};
 
 export type CompletionHistoryResult =
   | { ok: true; entries: CompletionHistoryEntry[] }
   | { ok: false; error: string };
 
 export type UpdateCompletionDateResult = { ok: true } | { ok: false; error: string };
+
+export type UploadCompletionPhotoResult =
+  | { ok: true; photoUrl: string }
+  | { ok: false; error: string };
+
+export type RemoveCompletionPhotoResult = { ok: true } | { ok: false; error: string };
 
 /**
  * Resolves and validates a square on a card the current user owns, or an
@@ -145,11 +165,16 @@ export async function getSquareCompletionHistory(
 
   try {
     const completions = await getCompletionsForSquare(cardId, squareId);
-    const entries = completions.map((completion) => ({
-      id: completion.id,
-      completedAt: completion.completedAt.toISOString(),
-      note: completion.note,
-    }));
+    const entries = await Promise.all(
+      completions.map(async (completion) => ({
+        id: completion.id,
+        completedAt: completion.completedAt.toISOString(),
+        note: completion.note,
+        photoUrl: completion.photoPath
+          ? await getCompletionPhotoSignedUrl(completion.photoPath)
+          : undefined,
+      })),
+    );
     return { ok: true, entries };
   } catch (error) {
     console.error("getSquareCompletionHistory: failed to read completion history", error);
@@ -214,6 +239,91 @@ export async function updateSquareCompletionNote(
     return { ok: true };
   } catch (error) {
     console.error("updateSquareCompletionNote: failed to update completion note", error);
+    return { ok: false, error: "Something went wrong. Try again." };
+  }
+}
+
+/** Resolves a single completion by id for a square the caller already owns, or an error. */
+async function getOwnedCompletion(
+  cardId: string,
+  squareId: string,
+  completionId: string,
+): Promise<{ ok: true; completion: Completion } | { ok: false; error: string }> {
+  const completions = await getCompletionsForSquare(cardId, squareId);
+  const completion = completions.find((completion) => completion.id === completionId);
+  if (!completion) {
+    return { ok: false, error: "Completion not found." };
+  }
+  return { ok: true, completion };
+}
+
+/** Uploads (or replaces) the photo on a single completion for a square the current user owns. */
+export async function uploadSquareCompletionPhoto(
+  cardId: string,
+  squareId: string,
+  completionId: string,
+  formData: FormData,
+): Promise<UploadCompletionPhotoResult> {
+  const resolved = await getOwnedSquare(cardId, squareId);
+  if (!resolved.ok) return resolved;
+
+  const file = formData.get("photo");
+  if (!(file instanceof File)) {
+    return { ok: false, error: "No photo was provided." };
+  }
+  if (!isAllowedPhotoType(file.type)) {
+    return { ok: false, error: `Photo must be a ${ALLOWED_PHOTO_TYPES_LABEL} image.` };
+  }
+  if (file.size > MAX_PHOTO_SIZE_BYTES) {
+    return {
+      ok: false,
+      error: `Photo is too large (max ${MAX_PHOTO_SIZE_BYTES / (1024 * 1024)}MB).`,
+    };
+  }
+
+  try {
+    const resolvedCompletion = await getOwnedCompletion(cardId, squareId, completionId);
+    if (!resolvedCompletion.ok) return resolvedCompletion;
+    const { completion: existing } = resolvedCompletion;
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const path = completionPhotoPath(cardId, completionId, file.type);
+    await uploadCompletionPhoto(path, buffer, file.type);
+    await updateCompletionPhoto(cardId, completionId, path);
+
+    if (existing.photoPath && existing.photoPath !== path) {
+      await deleteCompletionPhoto(existing.photoPath);
+    }
+
+    const photoUrl = await getCompletionPhotoSignedUrl(path);
+    return { ok: true, photoUrl };
+  } catch (error) {
+    console.error("uploadSquareCompletionPhoto: failed to upload photo", error);
+    return { ok: false, error: "Something went wrong. Try again." };
+  }
+}
+
+/** Removes the photo from a single completion for a square the current user owns. */
+export async function removeSquareCompletionPhoto(
+  cardId: string,
+  squareId: string,
+  completionId: string,
+): Promise<RemoveCompletionPhotoResult> {
+  const resolved = await getOwnedSquare(cardId, squareId);
+  if (!resolved.ok) return resolved;
+
+  try {
+    const resolvedCompletion = await getOwnedCompletion(cardId, squareId, completionId);
+    if (!resolvedCompletion.ok) return resolvedCompletion;
+    const { completion: existing } = resolvedCompletion;
+
+    if (existing.photoPath) {
+      await deleteCompletionPhoto(existing.photoPath);
+    }
+    await updateCompletionPhoto(cardId, completionId, null);
+    return { ok: true };
+  } catch (error) {
+    console.error("removeSquareCompletionPhoto: failed to remove photo", error);
     return { ok: false, error: "Something went wrong. Try again." };
   }
 }
