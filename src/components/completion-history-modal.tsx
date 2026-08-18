@@ -272,7 +272,13 @@ export function CompletionHistoryModal({
         tabIndex={-1}
         data-state={state}
         className={cn(
-          "border-border bg-card text-card-foreground mx-4 flex max-h-[80vh] w-full max-w-md flex-col gap-3 rounded-[var(--radius-sm)] border-2 p-4 focus-visible:outline-none sm:max-w-lg",
+          // overflow-x-hidden: this dialog is `fixed`, so it sits outside
+          // <body>'s own overflow clipping (fixed elements are positioned
+          // against the viewport, not the body box) — without its own
+          // clip, anything inside that renders wider than expected (native
+          // date-input rendering varies a lot by platform/browser) can
+          // still force horizontal scroll on the whole page.
+          "border-border bg-card text-card-foreground mx-4 flex max-h-[80vh] w-full max-w-md flex-col gap-3 overflow-x-hidden rounded-[var(--radius-sm)] border-2 p-4 focus-visible:outline-none sm:max-w-lg",
           state === "open"
             ? "[animation:pop-in_150ms_ease-out]"
             : "[animation:pop-out_150ms_ease-in]",
@@ -324,33 +330,45 @@ export function CompletionHistoryModal({
                 return (
                   <li
                     key={entry.id}
-                    className="bg-muted flex w-full items-start gap-2 rounded-[var(--radius-sm)] p-2"
+                    className="bg-muted flex w-full flex-col gap-2 rounded-[var(--radius-sm)] p-2 sm:flex-row sm:items-start"
                   >
-                    <span
-                      aria-hidden="true"
-                      className="text-muted-foreground w-4 shrink-0 pt-1.5 text-right text-xs font-semibold"
-                    >
-                      {index + 1}.
-                    </span>
-                    <div className="flex shrink-0 flex-col gap-1">
-                      <input
-                        type="date"
-                        aria-label={`Completion date, entry ${index + 1} of ${entriesAscending.length}`}
-                        className="border-control-border bg-card text-card-foreground w-fit max-w-[9rem] appearance-none rounded-[var(--radius-sm)] border px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                        value={draftValue}
-                        onChange={(event) =>
-                          setDraftValues((prev) => ({ ...prev, [entry.id]: event.target.value }))
-                        }
-                        onKeyDown={handleSaveShortcut}
-                        disabled={saving}
-                      />
-                      {dateError && (
-                        <p role="alert" className="text-destructive text-xs">
-                          {dateError}
-                        </p>
-                      )}
+                    {/* Grouped so the index+date pair can stack above the
+                        note on mobile (`sm:contents` below makes this div
+                        disappear as a box at sm+, so its children rejoin the
+                        row layout for the wider desktop version). Native
+                        `<input type="date">` rendering varies by platform —
+                        notably iOS Safari can ignore `max-width` on it,
+                        especially with larger system text sizes — so at
+                        mobile widths it no longer shares a row with the note
+                        field, avoiding the two ever competing for space and
+                        forcing horizontal scroll. */}
+                    <div className="flex items-start gap-2 sm:contents">
+                      <span
+                        aria-hidden="true"
+                        className="text-muted-foreground w-4 shrink-0 pt-1.5 text-right text-xs font-semibold"
+                      >
+                        {index + 1}.
+                      </span>
+                      <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-none sm:shrink-0">
+                        <input
+                          type="date"
+                          aria-label={`Completion date, entry ${index + 1} of ${entriesAscending.length}`}
+                          className="border-control-border bg-card text-card-foreground w-full max-w-[9rem] appearance-none rounded-[var(--radius-sm)] border px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-fit"
+                          value={draftValue}
+                          onChange={(event) =>
+                            setDraftValues((prev) => ({ ...prev, [entry.id]: event.target.value }))
+                          }
+                          onKeyDown={handleSaveShortcut}
+                          disabled={saving}
+                        />
+                        {dateError && (
+                          <p role="alert" className="text-destructive text-xs">
+                            {dateError}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <div className="flex min-w-0 flex-1 flex-col gap-1 pl-6 sm:pl-0">
                       <textarea
                         aria-label={`Note, entry ${index + 1} of ${entriesAscending.length}`}
                         className="border-control-border bg-card text-card-foreground w-full resize-none overflow-hidden rounded-[var(--radius-sm)] border px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"

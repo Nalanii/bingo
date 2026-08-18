@@ -40,7 +40,11 @@ export function Tooltip({
       <span
         role="tooltip"
         className={cn(
-          "pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 scale-95 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-xs font-semibold text-background opacity-0 shadow-lg transition-[opacity,transform] duration-150",
+          // max-w (not whitespace-nowrap): a long label centered on a narrow
+          // mobile square would otherwise force a single-line bubble wide
+          // enough to push past the viewport edge, causing horizontal page
+          // scroll even though the bubble is invisible until hover.
+          "pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-max max-w-[min(80vw,16rem)] -translate-x-1/2 scale-95 rounded-md bg-foreground px-2.5 py-1.5 text-xs font-semibold text-background opacity-0 shadow-lg transition-[opacity,transform] duration-150",
           "group-hover:scale-100 group-hover:opacity-100",
         )}
       >

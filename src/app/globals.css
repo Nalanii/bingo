@@ -98,6 +98,10 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  /* Defensive: clips any stray element (e.g. an absolutely-positioned
+     tooltip bubble centered near a narrow mobile square) that would
+     otherwise widen the page and force horizontal scroll. */
+  overflow-x: hidden;
 }
 
 /* Playful wobble used for hover accents and celebrations later. */

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Square } from "@/lib/firestore/cards";
 import { getBingoLines, type BingoLine } from "@/lib/cards/progress";
@@ -271,7 +271,7 @@ export function BingoGrid({
         </div>
       )}
       <div
-        className="mx-auto grid w-full max-w-xl gap-1.5 sm:gap-2 md:gap-3"
+        className="mx-auto grid w-full max-w-xl items-start gap-1.5 sm:gap-2 md:gap-3"
         style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
       >
         {slots.map((square, position) => (
@@ -456,14 +456,21 @@ function BingoSquareCell({
   const historyDateButton = (label: string, date: string) => (
     <button
       type="button"
-      className="flex flex-col text-[0.55rem] leading-tight italic hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-[0.6rem]"
+      className="flex items-center gap-1 text-[0.55rem] leading-tight italic hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:flex-col sm:items-start sm:text-[0.6rem]"
+      aria-label={`${label} ${date}`}
       onClick={(event) => {
         event.stopPropagation();
         onViewHistory(square);
       }}
     >
-      <span>{label}</span>
-      <span>{date}</span>
+      {/* Below sm, the label+date pair takes more height than a mobile
+          square can stay a true square and fit — swap to a compact icon
+          that keeps the tap target and history-viewing affordance without
+          the text's height cost. Full text returns at sm+, where squares
+          have room. */}
+      <History aria-hidden="true" className="h-3 w-3 shrink-0 sm:hidden" />
+      <span className="hidden sm:inline">{label}</span>
+      <span className="hidden sm:inline">{date}</span>
     </button>
   );
 
@@ -479,7 +486,12 @@ function BingoSquareCell({
             className="text-success-foreground pointer-events-none absolute top-1 right-1 h-3.5 w-3.5 sm:h-4 sm:w-4"
           />
         )}
-        {renderLabel("line-clamp-3", "text-[0.6rem] sm:text-xs")}
+        {/* 2 lines (not 3) below sm: a COUNTER square already spends height
+            on the +/- row and, once it has history, the icon-only history
+            button, so a 3-line label pushes the whole cell past a true
+            square at mobile widths. The full label is still reachable via
+            the truncation tooltip. */}
+        {renderLabel("line-clamp-2 sm:line-clamp-3", "text-[0.6rem] sm:text-xs")}
         <div className="flex items-center gap-1.5">
           <button
             type="button"
