@@ -43,8 +43,10 @@ and complete them to score BINGO. See `README.md` for the product overview and
 - `Card` — `name`, `gridSize` (3 or 5), `hasFreeSpace`, `layout` (RANDOM|SET).
 - `Square` — `position` (fixed grid slot), `label`, `kind` (CHECK|COUNTER),
   `goal` (CHECK == 1, COUNTER == N), `isFreeSpace`.
-- `Completion` — one log entry per completion step; `completedAt` is editable.
-  CHECK squares get one entry; COUNTER squares get one per increment.
+- `Completion` — one log entry per completion step; `completedAt` and `note`
+  are editable, and one photo may be attached (stored in Firebase Storage,
+  referenced by `photoPath`). CHECK squares get one entry; COUNTER squares
+  get one per increment.
 
 A square is **complete** when it is the free space, or its completion count
 `>= goal`. BINGO = any fully-complete row, column, or diagonal.

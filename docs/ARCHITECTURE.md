@@ -54,8 +54,13 @@ Browser ──► Next.js (App Router, on Vercel)
   goal of 1. UI differs; storage doesn't. This keeps completion logic simple:
   `isComplete = isFreeSpace || completions.length >= goal`.
 - **Completions are a log, not a counter.** Storing each step (rather than an
-  integer) gives us free history, editable dates, and a natural home for the
-  future "photo per completion" feature.
+  integer) gives us free history, editable dates, and lets each step carry
+  its own note and optional photo.
+- **Completion photos live in Firebase Storage**, referenced from Firestore
+  by a `photoPath` field (never a public URL). `storage.rules` denies all
+  direct client access, same as `firestore.rules` — every read goes through
+  a Server Action that mints a short-lived signed URL, and every
+  upload/delete goes through the Admin SDK (`src/lib/firebase/storage.ts`).
 - **Squares are embedded in the card doc.** The grid shape is fixed at
   creation and small (max 25 squares), so embedding gets the whole board in
   one read instead of a subcollection fetch.
