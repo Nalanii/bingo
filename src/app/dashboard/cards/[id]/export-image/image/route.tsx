@@ -6,17 +6,19 @@ import type { Square } from "@/lib/firestore/cards";
 import { BingoGlyph, loadCardFonts } from "@/lib/cards/bingo-mark";
 import { getCompletionPhotoSignedUrl } from "@/lib/firebase/storage";
 import {
+  FOOTNOTE_BLOCK_GAP,
+  FOOTNOTE_BLOCK_HEADER_HEIGHT,
+  FOOTNOTE_ENTRY_ROW_GAP,
+  FOOTNOTE_ENTRY_ROW_HEIGHT_WITH_NOTE,
+  FOOTNOTE_ENTRY_ROW_HEIGHT_WITHOUT_NOTE,
   FOOTNOTE_HEADING_HEIGHT,
-  FOOTNOTE_ROW_GAP,
-  FOOTNOTE_ROW_HEIGHT_WITH_NOTE,
-  FOOTNOTE_ROW_HEIGHT_WITHOUT_NOTE,
   FOOTNOTE_SECTION_TOP_GAP,
   FOOTNOTE_THUMBNAIL_SIZE,
-  buildFootnoteEntries,
+  buildFootnoteBlocks,
   computeFootnoteSectionHeight,
   footnoteNumberBySquareId,
-  getFootnoteCandidateSquares,
-  type FootnoteEntry,
+  getFootnoteBlockCandidates,
+  type FootnoteBlock,
 } from "@/lib/cards/export-footnotes";
 
 export const contentType = "image/png";
@@ -289,13 +291,15 @@ function ExportSquare({
 }
 
 /**
- * The "Notes" section below the board: one row per footnote-candidate
- * square, in the same numbered order as their corner badges. Renders
- * nothing when `entries` is empty, so cards with no notes/photos get no
- * extra markup at all.
+ * The "Notes" section below the board: one block per square that has at
+ * least one completion with a note and/or a photo, in the same numbered
+ * order as their corner badges. Each block lists every qualifying
+ * completion, oldest first, with its own date/note/photo. Renders nothing
+ * when `blocks` is empty, so cards with no notes/photos get no extra
+ * markup at all.
  */
-function ExportFootnotes({ entries, width }: { entries: FootnoteEntry[]; width: number }) {
-  if (entries.length === 0) return null;
+function ExportFootnotes({ blocks, width }: { blocks: FootnoteBlock[]; width: number }) {
+  if (blocks.length === 0) return null;
 
   return (
     <div style={{ display: "flex", justifyContent: "center", marginTop: FOOTNOTE_SECTION_TOP_GAP, width: "100%" }}>
@@ -313,19 +317,18 @@ function ExportFootnotes({ entries, width }: { entries: FootnoteEntry[]; width: 
         >
           Notes
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: FOOTNOTE_ROW_GAP }}>
-          {entries.map((entry) => (
-            <div
-              key={entry.squareId}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                height: entry.note ? FOOTNOTE_ROW_HEIGHT_WITH_NOTE : FOOTNOTE_ROW_HEIGHT_WITHOUT_NOTE,
-              }}
-            >
-              <FootnoteBadge number={entry.number} diameter={32} />
-              <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0, justifyContent: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: FOOTNOTE_BLOCK_GAP }}>
+          {blocks.map((block) => (
+            <div key={block.squareId} style={{ display: "flex", flexDirection: "column" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  height: FOOTNOTE_BLOCK_HEADER_HEIGHT,
+                }}
+              >
+                <FootnoteBadge number={block.number} diameter={28} />
                 <div
                   style={{
                     display: "-webkit-box",
@@ -339,43 +342,63 @@ function ExportFootnotes({ entries, width }: { entries: FootnoteEntry[]; width: 
                     maxHeight: 24,
                   }}
                 >
-                  {entry.label}
+                  {block.label}
                 </div>
-                {entry.note && (
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: FOOTNOTE_ENTRY_ROW_GAP }}>
+                {block.entries.map((entry, index) => (
                   <div
+                    key={index}
                     style={{
-                      display: "-webkit-box",
-                      WebkitBoxOrient: "vertical",
-                      WebkitLineClamp: 2,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      marginTop: 4,
-                      fontSize: 17,
-                      lineHeight: 1.3,
-                      color: MUTED_FOREGROUND,
-                      maxHeight: 17 * 1.3 * 2,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 14,
+                      paddingLeft: 38,
+                      height: entry.note ? FOOTNOTE_ENTRY_ROW_HEIGHT_WITH_NOTE : FOOTNOTE_ENTRY_ROW_HEIGHT_WITHOUT_NOTE,
                     }}
                   >
-                    {entry.note}
+                    <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0, justifyContent: "center" }}>
+                      <div style={{ display: "flex", fontSize: 14, fontStyle: "italic", color: MUTED_FOREGROUND }}>
+                        {formatDate(entry.date)}
+                      </div>
+                      {entry.note && (
+                        <div
+                          style={{
+                            display: "-webkit-box",
+                            WebkitBoxOrient: "vertical",
+                            WebkitLineClamp: 2,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            marginTop: 4,
+                            fontSize: 17,
+                            lineHeight: 1.3,
+                            color: MUTED_FOREGROUND,
+                            maxHeight: 17 * 1.3 * 2,
+                          }}
+                        >
+                          {entry.note}
+                        </div>
+                      )}
+                    </div>
+                    {entry.photoUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element -- satori (next/og's ImageResponse) requires a plain <img>, not next/image.
+                      <img
+                        src={entry.photoUrl}
+                        alt=""
+                        width={FOOTNOTE_THUMBNAIL_SIZE}
+                        height={FOOTNOTE_THUMBNAIL_SIZE}
+                        style={{
+                          width: FOOTNOTE_THUMBNAIL_SIZE,
+                          height: FOOTNOTE_THUMBNAIL_SIZE,
+                          borderRadius: 10,
+                          objectFit: "cover",
+                          flexShrink: 0,
+                        }}
+                      />
+                    )}
                   </div>
-                )}
+                ))}
               </div>
-              {entry.photoUrl && (
-                // eslint-disable-next-line @next/next/no-img-element -- satori (next/og's ImageResponse) requires a plain <img>, not next/image.
-                <img
-                  src={entry.photoUrl}
-                  alt=""
-                  width={FOOTNOTE_THUMBNAIL_SIZE}
-                  height={FOOTNOTE_THUMBNAIL_SIZE}
-                  style={{
-                    width: FOOTNOTE_THUMBNAIL_SIZE,
-                    height: FOOTNOTE_THUMBNAIL_SIZE,
-                    borderRadius: 10,
-                    objectFit: "cover",
-                    flexShrink: 0,
-                  }}
-                />
-              )}
             </div>
           ))}
         </div>
@@ -416,32 +439,41 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     },
     {},
   );
+  const completionsBySquareId = completions.reduce<Record<string, Completion[]>>((bySquare, completion) => {
+    (bySquare[completion.squareId] ??= []).push(completion);
+    return bySquare;
+  }, {});
 
   const squaresByPosition = new Map(card.squares.map((square) => [square.position, square]));
   const slotCount = card.gridSize * card.gridSize;
   const slots = Array.from({ length: slotCount }, (_, position) => squaresByPosition.get(position));
 
-  // Each square whose latest completion has a note and/or a photo gets a
-  // numbered footnote — see
-  // docs/superpowers/specs/2026-08-18-export-image-notes-photos-design.md.
-  const footnoteCandidates = getFootnoteCandidateSquares(slots, latestCompletionsBySquareId);
-  const resolvedFootnoteCandidates = await Promise.all(
-    footnoteCandidates.map(async (candidate) => {
-      if (!candidate.completion.photoPath) {
-        return { ...candidate, photoUrl: undefined };
-      }
-      try {
-        const photoUrl = await getCompletionPhotoSignedUrl(candidate.completion.photoPath);
-        return { ...candidate, photoUrl };
-      } catch (error) {
-        console.error("export-image: failed to sign completion photo URL", error);
-        return { ...candidate, photoUrl: undefined };
-      }
-    }),
+  // Every square with at least one completion that has a note and/or a
+  // photo gets a numbered footnote block listing all of them — see
+  // docs/superpowers/specs/2026-08-18-export-image-notes-photos-v2-design.md.
+  const footnoteBlockCandidates = getFootnoteBlockCandidates(slots, completionsBySquareId);
+  const resolvedFootnoteBlockCandidates = await Promise.all(
+    footnoteBlockCandidates.map(async (candidate) => ({
+      square: candidate.square,
+      entries: await Promise.all(
+        candidate.completions.map(async (completion) => {
+          if (!completion.photoPath) {
+            return { completion, photoUrl: undefined };
+          }
+          try {
+            const photoUrl = await getCompletionPhotoSignedUrl(completion.photoPath);
+            return { completion, photoUrl };
+          } catch (error) {
+            console.error("export-image: failed to sign completion photo URL", error);
+            return { completion, photoUrl: undefined };
+          }
+        }),
+      ),
+    })),
   );
-  const footnoteEntries = buildFootnoteEntries(resolvedFootnoteCandidates);
-  const footnoteNumbers = footnoteNumberBySquareId(footnoteEntries);
-  const footnoteSectionHeight = computeFootnoteSectionHeight(footnoteEntries);
+  const footnoteBlocks = buildFootnoteBlocks(resolvedFootnoteBlockCandidates);
+  const footnoteNumbers = footnoteNumberBySquareId(footnoteBlocks);
+  const footnoteSectionHeight = computeFootnoteSectionHeight(footnoteBlocks);
 
   const contentWidth = CANVAS - PADDING * 2;
   const contentHeight = CANVAS - PADDING * 2;
@@ -556,7 +588,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         <div style={{ display: "flex", marginTop: 5, fontSize: 12, color: MUTED_FOREGROUND }}>Generated on {generatedOn}</div>
       </div>
 
-      <ExportFootnotes entries={footnoteEntries} width={contentWidth} />
+      <ExportFootnotes blocks={footnoteBlocks} width={contentWidth} />
     </div>,
     { width: CANVAS, height: CANVAS + footnoteSectionHeight, fonts: await loadCardFonts() },
   );
