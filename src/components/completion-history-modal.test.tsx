@@ -5,21 +5,33 @@ import type { Square } from "@/lib/firestore/cards";
 import type { CompletionHistoryEntry } from "@/app/dashboard/cards/[id]/play/actions";
 import {
   getSquareCompletionHistory,
+  removeSquareCompletionPhoto,
   updateSquareCompletionDate,
   updateSquareCompletionNote,
+  uploadSquareCompletionPhoto,
 } from "@/app/dashboard/cards/[id]/play/actions";
 import { MAX_NOTE_LENGTH } from "@/lib/completion-notes";
+import { MAX_PHOTO_SIZE_BYTES } from "@/lib/completion-photos";
 import { CompletionHistoryModal } from "./completion-history-modal";
 
 vi.mock("@/app/dashboard/cards/[id]/play/actions", () => ({
   getSquareCompletionHistory: vi.fn(),
   updateSquareCompletionDate: vi.fn(),
   updateSquareCompletionNote: vi.fn(),
+  uploadSquareCompletionPhoto: vi.fn(),
+  removeSquareCompletionPhoto: vi.fn(),
 }));
 
 const mockGetHistory = vi.mocked(getSquareCompletionHistory);
 const mockUpdateDate = vi.mocked(updateSquareCompletionDate);
 const mockUpdateNote = vi.mocked(updateSquareCompletionNote);
+const mockUploadPhoto = vi.mocked(uploadSquareCompletionPhoto);
+const mockRemovePhoto = vi.mocked(removeSquareCompletionPhoto);
+
+/** Builds a fake image File of the given size, for upload-control tests. */
+function makeImageFile(name: string, sizeBytes: number, type = "image/png"): File {
+  return new File([new Uint8Array(sizeBytes)], name, { type });
+}
 
 const cardId = "card-1";
 const square: Square = {
@@ -55,6 +67,8 @@ describe("CompletionHistoryModal", () => {
     mockGetHistory.mockReset();
     mockUpdateDate.mockReset();
     mockUpdateNote.mockReset();
+    mockUploadPhoto.mockReset();
+    mockRemovePhoto.mockReset();
     mockGetHistory.mockResolvedValue({ ok: true, entries: [baseEntry] });
     mockUpdateDate.mockResolvedValue({ ok: true });
     mockUpdateNote.mockResolvedValue({ ok: true });
@@ -163,5 +177,76 @@ describe("CompletionHistoryModal", () => {
     fireEvent.change(noteTextarea, { target: { value: longNote } });
 
     expect(screen.getByText(`${longNote.length}/${MAX_NOTE_LENGTH}`)).toBeInTheDocument();
+  });
+
+  it("uploads a photo and shows its thumbnail on success", async () => {
+    mockUploadPhoto.mockResolvedValue({ ok: true, photoUrl: "https://storage.example/photo.png" });
+    renderModal();
+    await getControls();
+
+    const addButton = screen.getByRole("button", { name: "Add photo" });
+    fireEvent.click(addButton);
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = makeImageFile("photo.png", 1024);
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => expect(mockUploadPhoto).toHaveBeenCalledTimes(1));
+    expect(mockUploadPhoto).toHaveBeenCalledWith(cardId, square.id, "entry-1", expect.any(FormData));
+    expect(await screen.findByAltText("Photo for entry 1")).toBeInTheDocument();
+  });
+
+  it("rejects an oversized photo before calling the upload action", async () => {
+    renderModal();
+    await getControls();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add photo" }));
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = makeImageFile("huge.png", MAX_PHOTO_SIZE_BYTES + 1);
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    expect(await screen.findByText(/too large/)).toBeInTheDocument();
+    expect(mockUploadPhoto).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-image file before calling the upload action", async () => {
+    renderModal();
+    await getControls();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add photo" }));
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = makeImageFile("notes.txt", 1024, "text/plain");
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    expect(await screen.findByText(/must be a/)).toBeInTheDocument();
+    expect(mockUploadPhoto).not.toHaveBeenCalled();
+  });
+
+  it("shows a remove button once a photo exists, and removes it on click", async () => {
+    mockGetHistory.mockResolvedValue({
+      ok: true,
+      entries: [{ ...baseEntry, photoUrl: "https://storage.example/photo.png" }],
+    });
+    mockRemovePhoto.mockResolvedValue({ ok: true });
+    renderModal();
+    await getControls();
+
+    expect(await screen.findByAltText("Photo for entry 1")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+
+    await waitFor(() => expect(mockRemovePhoto).toHaveBeenCalledWith(cardId, square.id, "entry-1"));
+    await waitFor(() => expect(screen.queryByAltText("Photo for entry 1")).not.toBeInTheDocument());
+  });
+
+  it("shows an error message when the upload action fails", async () => {
+    mockUploadPhoto.mockResolvedValue({ ok: false, error: "Something went wrong. Try again." });
+    renderModal();
+    await getControls();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add photo" }));
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [makeImageFile("photo.png", 1024)] } });
+
+    expect(await screen.findByText("Something went wrong. Try again.")).toBeInTheDocument();
   });
 });
