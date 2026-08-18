@@ -271,7 +271,18 @@ export function BingoGrid({
         </div>
       )}
       <div
-        className="mx-auto grid w-full max-w-xl items-start gap-1.5 sm:gap-2 md:gap-3"
+        // overflow-x-clip (not hidden): a square's hover tooltip
+        // (`Tooltip` in ui/tooltip.tsx) is `w-max` up to 16rem, wider than
+        // any square, so on an edge column it geometrically extends past
+        // this grid's own box even though it's invisible until hover. Left
+        // unclipped, that box still counts toward the document's
+        // scrollable overflow, widening the page and forcing real
+        // horizontal scroll on mobile (worse on iOS Safari, which doesn't
+        // reliably honor `overflow-x: hidden` on body alone — see the
+        // matching `html` rule in globals.css). Clipping only the x-axis
+        // here (not overflow-hidden, which would also clip the y-axis)
+        // keeps a tooltip popping up above row 1 fully visible.
+        className="mx-auto grid w-full max-w-xl items-start gap-1.5 overflow-x-clip sm:gap-2 md:gap-3"
         style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
       >
         {slots.map((square, position) => (
@@ -483,7 +494,15 @@ function BingoSquareCell({
         {goalReached && (
           <Check
             aria-hidden="true"
-            className="text-success-foreground pointer-events-none absolute top-1 right-1 h-3.5 w-3.5 sm:h-4 sm:w-4"
+            // hidden below sm: reserving this badge's own space at the top
+            // of an already-tight mobile square (on top of the label, +/-
+            // row, and history icon) pushed the square's own min-content
+            // height past its width, stretching it into a rectangle again.
+            // The background already switches to the success color when
+            // the goal is reached, so completion still reads clearly on
+            // mobile without the corner badge; the badge returns at sm+
+            // where there's room for it without a fight over space.
+            className="text-success-foreground pointer-events-none absolute top-1 right-1 hidden h-4 w-4 sm:block"
           />
         )}
         {/* 2 lines (not 3) below sm: a COUNTER square already spends height
@@ -524,7 +543,15 @@ function BingoSquareCell({
     );
   }
 
-  const content = renderLabel("line-clamp-4", "text-[0.65rem] sm:text-xs");
+  // 3 lines (not 4) below sm: a completed CHECK square's checkmark badge
+  // sits absolutely in the top-right corner, and a fully-4-line label
+  // centered in a mobile-width square reaches close enough to that corner
+  // to visually collide with it. Capping to 3 lines leaves headroom above
+  // the text either way; the full label is still reachable via the
+  // truncation tooltip. The same crowding also pushes the square's own
+  // content taller than its width, breaking the square aspect ratio (see
+  // the matching COUNTER comment below).
+  const content = renderLabel("line-clamp-3 sm:line-clamp-4", "text-[0.65rem] sm:text-xs");
 
   if (!isCheckInteractive) {
     return <div className={sharedClassName}>{content}</div>;
@@ -538,7 +565,15 @@ function BingoSquareCell({
       {completed && (
         <Check
           aria-hidden="true"
-          className="text-success-foreground pointer-events-none absolute top-1 right-1 h-3.5 w-3.5 sm:h-4 sm:w-4"
+          // hidden below sm: same tradeoff as the COUNTER goalReached badge
+          // above — reserving this badge's own space at the top of an
+          // already-tight mobile square (on top of a multi-line label and
+          // the history icon) pushed the square's own min-content height
+          // past its width, stretching it into a rectangle again. The
+          // background already switches to the success color when
+          // completed, so completion still reads clearly on mobile without
+          // the corner badge; it returns at sm+ where there's room.
+          className="text-success-foreground pointer-events-none absolute top-1 right-1 hidden h-4 w-4 sm:block"
         />
       )}
       <button
