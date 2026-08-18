@@ -289,10 +289,108 @@ function ExportSquare({
 }
 
 /**
+ * The "Notes" section below the board: one row per footnote-candidate
+ * square, in the same numbered order as their corner badges. Renders
+ * nothing when `entries` is empty, so cards with no notes/photos get no
+ * extra markup at all.
+ */
+function ExportFootnotes({ entries, width }: { entries: FootnoteEntry[]; width: number }) {
+  if (entries.length === 0) return null;
+
+  return (
+    <div style={{ display: "flex", justifyContent: "center", marginTop: FOOTNOTE_SECTION_TOP_GAP, width: "100%" }}>
+      <div style={{ display: "flex", flexDirection: "column", width }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            height: FOOTNOTE_HEADING_HEIGHT,
+            fontFamily: "Fredoka",
+            fontSize: 24,
+            fontWeight: 700,
+            color: FOREGROUND,
+          }}
+        >
+          Notes
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: FOOTNOTE_ROW_GAP }}>
+          {entries.map((entry) => (
+            <div
+              key={entry.squareId}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                height: entry.note ? FOOTNOTE_ROW_HEIGHT_WITH_NOTE : FOOTNOTE_ROW_HEIGHT_WITHOUT_NOTE,
+              }}
+            >
+              <FootnoteBadge number={entry.number} diameter={32} />
+              <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0, justifyContent: "center" }}>
+                <div
+                  style={{
+                    display: "-webkit-box",
+                    WebkitBoxOrient: "vertical",
+                    WebkitLineClamp: 1,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    fontSize: 20,
+                    fontWeight: 700,
+                    color: FOREGROUND,
+                    maxHeight: 24,
+                  }}
+                >
+                  {entry.label}
+                </div>
+                {entry.note && (
+                  <div
+                    style={{
+                      display: "-webkit-box",
+                      WebkitBoxOrient: "vertical",
+                      WebkitLineClamp: 2,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      marginTop: 4,
+                      fontSize: 17,
+                      lineHeight: 1.3,
+                      color: MUTED_FOREGROUND,
+                      maxHeight: 17 * 1.3 * 2,
+                    }}
+                  >
+                    {entry.note}
+                  </div>
+                )}
+              </div>
+              {entry.photoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element -- satori (next/og's ImageResponse) requires a plain <img>, not next/image.
+                <img
+                  src={entry.photoUrl}
+                  alt=""
+                  width={FOOTNOTE_THUMBNAIL_SIZE}
+                  height={FOOTNOTE_THUMBNAIL_SIZE}
+                  style={{
+                    width: FOOTNOTE_THUMBNAIL_SIZE,
+                    height: FOOTNOTE_THUMBNAIL_SIZE,
+                    borderRadius: 10,
+                    objectFit: "cover",
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Renders a shareable PNG snapshot of a bingo card: title, board (including
- * each square's completion date where applicable), and a small Bingoal
- * credit + generation date footer — a static image with no interactive
- * chrome (no +/− controls, no tap affordances). See GitHub issue #60.
+ * each square's completion date and, where applicable, a numbered badge
+ * pointing at a "Notes" entry with its note text and/or photo), and a small
+ * Bingoal credit + generation date footer — a static image with no
+ * interactive chrome (no +/− controls, no tap affordances). See GitHub
+ * issues #60 and #64.
  */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -457,7 +555,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         </div>
         <div style={{ display: "flex", marginTop: 5, fontSize: 12, color: MUTED_FOREGROUND }}>Generated on {generatedOn}</div>
       </div>
+
+      <ExportFootnotes entries={footnoteEntries} width={contentWidth} />
     </div>,
-    { width: CANVAS, height: CANVAS, fonts: await loadCardFonts() },
+    { width: CANVAS, height: CANVAS + footnoteSectionHeight, fonts: await loadCardFonts() },
   );
 }
