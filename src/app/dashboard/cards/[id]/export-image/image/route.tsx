@@ -1,9 +1,23 @@
 import { ImageResponse } from "next/og";
 import { getOwnedCard } from "@/lib/cards/access";
 import { countCompletionsBySquare } from "@/lib/cards/progress";
-import { getCompletions } from "@/lib/firestore/completions";
+import { getCompletions, type Completion } from "@/lib/firestore/completions";
 import type { Square } from "@/lib/firestore/cards";
 import { BingoGlyph, loadCardFonts } from "@/lib/cards/bingo-mark";
+import { getCompletionPhotoSignedUrl } from "@/lib/firebase/storage";
+import {
+  FOOTNOTE_HEADING_HEIGHT,
+  FOOTNOTE_ROW_GAP,
+  FOOTNOTE_ROW_HEIGHT_WITH_NOTE,
+  FOOTNOTE_ROW_HEIGHT_WITHOUT_NOTE,
+  FOOTNOTE_SECTION_TOP_GAP,
+  FOOTNOTE_THUMBNAIL_SIZE,
+  buildFootnoteEntries,
+  computeFootnoteSectionHeight,
+  footnoteNumberBySquareId,
+  getFootnoteCandidateSquares,
+  type FootnoteEntry,
+} from "@/lib/cards/export-footnotes";
 
 export const contentType = "image/png";
 
@@ -56,16 +70,48 @@ function formatDate(iso: string): string {
 
 const CELL_PADDING = 10;
 
+/**
+ * Small numbered circle used both as a square's corner marker and as each
+ * row's number in the "Notes" section below the board. Rendered as a div
+ * (not SVG `<text>`, which satori doesn't support) — same technique as
+ * `BingoBadge` in src/lib/cards/bingo-mark.tsx.
+ */
+function FootnoteBadge({ number, diameter }: { number: number; diameter: number }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+        width: diameter,
+        height: diameter,
+        borderRadius: "9999px",
+        background: SECONDARY,
+        border: "2px solid #fff9f0",
+        color: "#fff9f0",
+        fontSize: diameter * 0.5,
+        fontWeight: 700,
+        fontFamily: "Fredoka",
+      }}
+    >
+      {number}
+    </div>
+  );
+}
+
 function ExportSquare({
   square,
   count,
   cellSize,
   latestCompletionDate,
+  footnoteNumber,
 }: {
   square: Square;
   count: number;
   cellSize: number;
   latestCompletionDate: string | undefined;
+  footnoteNumber: number | undefined;
 }) {
   const done = isSquareDone(square, count);
   const isCounter = square.kind === "COUNTER" && !square.isFreeSpace;
@@ -233,6 +279,11 @@ function ExportSquare({
           )}
         </div>
       )}
+      {footnoteNumber !== undefined && (
+        <div style={{ position: "absolute", top: 6, right: 6, display: "flex" }}>
+          <FootnoteBadge number={footnoteNumber} diameter={26} />
+        </div>
+      )}
     </div>
   );
 }
@@ -257,17 +308,42 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   const completions = await getCompletions(id);
   const countsBySquareId = countCompletionsBySquare(completions);
-  const latestCompletionDates = completions.reduce<Record<string, string>>((latest, completion) => {
-    const existing = latest[completion.squareId];
-    if (!existing || completion.completedAt > new Date(existing)) {
-      latest[completion.squareId] = completion.completedAt.toISOString();
-    }
-    return latest;
-  }, {});
+  const latestCompletionsBySquareId = completions.reduce<Record<string, Completion>>(
+    (latest, completion) => {
+      const existing = latest[completion.squareId];
+      if (!existing || completion.completedAt > existing.completedAt) {
+        latest[completion.squareId] = completion;
+      }
+      return latest;
+    },
+    {},
+  );
 
   const squaresByPosition = new Map(card.squares.map((square) => [square.position, square]));
   const slotCount = card.gridSize * card.gridSize;
   const slots = Array.from({ length: slotCount }, (_, position) => squaresByPosition.get(position));
+
+  // Each square whose latest completion has a note and/or a photo gets a
+  // numbered footnote — see
+  // docs/superpowers/specs/2026-08-18-export-image-notes-photos-design.md.
+  const footnoteCandidates = getFootnoteCandidateSquares(slots, latestCompletionsBySquareId);
+  const resolvedFootnoteCandidates = await Promise.all(
+    footnoteCandidates.map(async (candidate) => {
+      if (!candidate.completion.photoPath) {
+        return { ...candidate, photoUrl: undefined };
+      }
+      try {
+        const photoUrl = await getCompletionPhotoSignedUrl(candidate.completion.photoPath);
+        return { ...candidate, photoUrl };
+      } catch (error) {
+        console.error("export-image: failed to sign completion photo URL", error);
+        return { ...candidate, photoUrl: undefined };
+      }
+    }),
+  );
+  const footnoteEntries = buildFootnoteEntries(resolvedFootnoteCandidates);
+  const footnoteNumbers = footnoteNumberBySquareId(footnoteEntries);
+  const footnoteSectionHeight = computeFootnoteSectionHeight(footnoteEntries);
 
   const contentWidth = CANVAS - PADDING * 2;
   const contentHeight = CANVAS - PADDING * 2;
@@ -336,7 +412,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
                 square={square}
                 count={countsBySquareId[square.id] ?? 0}
                 cellSize={cellSize}
-                latestCompletionDate={latestCompletionDates[square.id]}
+                latestCompletionDate={latestCompletionsBySquareId[square.id]?.completedAt.toISOString()}
+                footnoteNumber={footnoteNumbers[square.id]}
               />
             ) : (
               <div
