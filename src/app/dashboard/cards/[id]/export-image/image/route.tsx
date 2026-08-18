@@ -4,7 +4,7 @@ import { countCompletionsBySquare } from "@/lib/cards/progress";
 import { getCompletions, type Completion } from "@/lib/firestore/completions";
 import type { Square } from "@/lib/firestore/cards";
 import { BingoGlyph, loadCardFonts } from "@/lib/cards/bingo-mark";
-import { getCompletionPhotoSignedUrl } from "@/lib/firebase/storage";
+import { getCompletionPhotoDataUri } from "@/lib/firebase/storage";
 import {
   FOOTNOTE_BLOCK_GAP,
   FOOTNOTE_BLOCK_HEADER_HEIGHT,
@@ -461,10 +461,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
             return { completion, photoUrl: undefined };
           }
           try {
-            const photoUrl = await getCompletionPhotoSignedUrl(completion.photoPath);
+            const photoUrl = await getCompletionPhotoDataUri(completion.photoPath, FOOTNOTE_THUMBNAIL_SIZE * 2);
             return { completion, photoUrl };
           } catch (error) {
-            console.error("export-image: failed to sign completion photo URL", error);
+            console.error("export-image: failed to load completion photo", error);
             return { completion, photoUrl: undefined };
           }
         }),

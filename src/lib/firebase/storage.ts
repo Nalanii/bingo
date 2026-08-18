@@ -1,4 +1,5 @@
 import { getStorage } from "firebase-admin/storage";
+import sharp from "sharp";
 import { adminApp } from "@/lib/firebase/admin";
 import { ALLOWED_PHOTO_TYPES } from "@/lib/completion-photos";
 
@@ -39,4 +40,23 @@ export async function getCompletionPhotoSignedUrl(path: string): Promise<string>
     expires: Date.now() + SIGNED_URL_TTL_MS,
   });
   return url;
+}
+
+/**
+ * Downloads a completion photo and re-encodes it as a PNG data URI, resized
+ * to a `size`x`size` square crop. Used by the export image (see GitHub issue
+ * #64) instead of a signed URL: satori's rasterizer (resvg, bundled with
+ * `next/og`) silently drops WebP `<img>` sources rather than erroring —
+ * confirmed live, a WebP completion photo produced a valid PNG export with
+ * that one thumbnail just missing, no error logged anywhere. Normalizing
+ * every format to PNG here removes that dependency entirely, and avoids
+ * satori needing to fetch the image itself over the network at render time.
+ * Not used by the completion-history modal, which renders photos as normal
+ * browser `<img>` tags — any format the browser itself supports is fine
+ * there.
+ */
+export async function getCompletionPhotoDataUri(path: string, size: number): Promise<string> {
+  const [buffer] = await bucket.file(path).download();
+  const png = await sharp(buffer).resize(size, size, { fit: "cover" }).png().toBuffer();
+  return `data:image/png;base64,${png.toString("base64")}`;
 }
