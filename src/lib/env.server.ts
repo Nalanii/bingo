@@ -9,5 +9,6 @@ export const envServer = {
       /\\n/g,
       "\n",
     ),
+    storageBucket: required("FIREBASE_STORAGE_BUCKET", process.env.FIREBASE_STORAGE_BUCKET),
   },
 };

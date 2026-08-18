@@ -1,0 +1,12 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // All reads/writes happen server-side through the Admin SDK, which
+    // bypasses these rules. This blocks any direct client-side access as
+    // defense-in-depth, mirroring firestore.rules.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

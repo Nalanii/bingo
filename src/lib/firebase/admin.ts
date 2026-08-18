@@ -17,11 +17,15 @@ const adminApp =
       clientEmail: envServer.firebaseAdmin.clientEmail,
       privateKey: envServer.firebaseAdmin.privateKey,
     }),
+    storageBucket: envServer.firebaseAdmin.storageBucket,
   });
 
 if (process.env.NODE_ENV !== "production") {
   globalForFirebaseAdmin.firebaseAdminApp = adminApp;
 }
+
+/** The shared Admin app instance — server-only. Used by `src/lib/firebase/storage.ts`. */
+export { adminApp };
 
 /** Firebase Admin Auth instance — server-only. */
 export const adminAuth = getAuth(adminApp);
