@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +20,17 @@ import { cn } from "@/lib/utils";
 export function ExportImageViewer({ src, alt }: { src: string; alt: string }) {
   const [loaded, setLoaded] = useState(false);
 
+  // Callback ref instead of onLoad alone: onLoad only fires for the `load`
+  // event, which can happen before React attaches the listener (e.g. an
+  // image resolved from the browser cache, or just very fast) — in that
+  // case `load` never fires again and the spinner would spin forever even
+  // though the image already finished. Checking `img.complete` as soon as
+  // the ref attaches catches that case; onLoad still covers the normal
+  // (slower, uncached) path.
+  const imgRef = useCallback((img: HTMLImageElement | null) => {
+    if (img?.complete) setLoaded(true);
+  }, []);
+
   return (
     <div className="relative w-full max-w-xl">
       {!loaded && (
@@ -31,6 +42,7 @@ export function ExportImageViewer({ src, alt }: { src: string; alt: string }) {
           generated, per-request PNG from our own route handler, not a static
           asset next/image's optimizer would help with. */}
       <img
+        ref={imgRef}
         src={src}
         alt={alt}
         onLoad={() => setLoaded(true)}
