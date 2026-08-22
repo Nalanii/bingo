@@ -327,23 +327,33 @@ export function CompletionHistoryModal({
     );
     setPhotoUploading((prev) => ({ ...prev, [entryId]: true }));
 
-    const formData = new FormData();
-    formData.append("photo", file);
-    const result = await uploadSquareCompletionPhoto(cardId, square.id, entryId, formData);
+    // try/finally so a thrown error (e.g. the request getting rejected
+    // before the action even runs, such as exceeding the server's request
+    // body limit) still clears the spinner instead of leaving it stuck
+    // forever — this is what mobile photo uploads were hitting in practice.
+    try {
+      const formData = new FormData();
+      formData.append("photo", file);
+      const result = await uploadSquareCompletionPhoto(cardId, square.id, entryId, formData);
 
-    setPhotoUploading((prev) => ({ ...prev, [entryId]: false }));
-    if (!result.ok) {
-      setPhotoErrors((prev) => ({ ...prev, [entryId]: result.error }));
-      return;
+      if (!result.ok) {
+        setPhotoErrors((prev) => ({ ...prev, [entryId]: result.error }));
+        return;
+      }
+
+      setEntries(
+        (prev) =>
+          prev?.map((entry) =>
+            entry.id === entryId ? { ...entry, photoUrl: result.photoUrl } : entry,
+          ) ?? prev,
+      );
+      flashPhotoSaved(entryId);
+    } catch (error) {
+      console.error("handlePhotoFileChange: failed to upload photo", error);
+      setPhotoErrors((prev) => ({ ...prev, [entryId]: "Something went wrong. Try again." }));
+    } finally {
+      setPhotoUploading((prev) => ({ ...prev, [entryId]: false }));
     }
-
-    setEntries(
-      (prev) =>
-        prev?.map((entry) =>
-          entry.id === entryId ? { ...entry, photoUrl: result.photoUrl } : entry,
-        ) ?? prev,
-    );
-    flashPhotoSaved(entryId);
   }
 
   async function handleRemovePhoto(entryId: string) {
@@ -352,20 +362,27 @@ export function CompletionHistoryModal({
     );
     setPhotoUploading((prev) => ({ ...prev, [entryId]: true }));
 
-    const result = await removeSquareCompletionPhoto(cardId, square.id, entryId);
+    try {
+      const result = await removeSquareCompletionPhoto(cardId, square.id, entryId);
 
-    setPhotoUploading((prev) => ({ ...prev, [entryId]: false }));
-    if (!result.ok) {
-      setPhotoErrors((prev) => ({ ...prev, [entryId]: result.error }));
-      return;
+      if (!result.ok) {
+        setPhotoErrors((prev) => ({ ...prev, [entryId]: result.error }));
+        return;
+      }
+
+      setEntries(
+        (prev) =>
+          prev?.map((entry) =>
+            entry.id === entryId ? { ...entry, photoUrl: undefined } : entry,
+          ) ?? prev,
+      );
+      flashPhotoSaved(entryId);
+    } catch (error) {
+      console.error("handleRemovePhoto: failed to remove photo", error);
+      setPhotoErrors((prev) => ({ ...prev, [entryId]: "Something went wrong. Try again." }));
+    } finally {
+      setPhotoUploading((prev) => ({ ...prev, [entryId]: false }));
     }
-
-    setEntries(
-      (prev) =>
-        prev?.map((entry) => (entry.id === entryId ? { ...entry, photoUrl: undefined } : entry)) ??
-        prev,
-    );
-    flashPhotoSaved(entryId);
   }
 
   return (
