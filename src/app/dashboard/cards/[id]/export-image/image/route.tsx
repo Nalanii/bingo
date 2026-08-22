@@ -8,17 +8,18 @@ import { getCompletionPhotoDataUri } from "@/lib/firebase/storage";
 import {
   FOOTNOTE_BLOCK_GAP,
   FOOTNOTE_BLOCK_HEADER_HEIGHT,
-  FOOTNOTE_ENTRY_ROW_GAP,
-  FOOTNOTE_ENTRY_ROW_HEIGHT_WITH_NOTE,
-  FOOTNOTE_ENTRY_ROW_HEIGHT_WITHOUT_NOTE,
+  FOOTNOTE_GRID_GAP,
+  FOOTNOTE_GRID_INDENT,
   FOOTNOTE_HEADING_HEIGHT,
   FOOTNOTE_SECTION_TOP_GAP,
-  FOOTNOTE_THUMBNAIL_SIZE,
+  FOOTNOTE_TILE_CAPTION_HEIGHT,
   buildFootnoteBlocks,
   computeFootnoteSectionHeight,
+  computeFootnoteTileWidth,
   footnoteNumberBySquareId,
   getFootnoteBlockCandidates,
   type FootnoteBlock,
+  type FootnoteHistoryEntry,
 } from "@/lib/cards/export-footnotes";
 
 export const contentType = "image/png";
@@ -291,15 +292,114 @@ function ExportSquare({
 }
 
 /**
+ * One entry in a block's grid: a square tile showing the full photo (not a
+ * cropped-down thumbnail) with a caption strip below it for the date and,
+ * when the entry also has a note, a couple of truncated lines of it. An
+ * entry with no photo shows its note as the tile's main content instead,
+ * so every entry still renders as a same-sized tile in the grid.
+ */
+function ExportFootnoteTile({ entry, tileWidth }: { entry: FootnoteHistoryEntry; tileWidth: number }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: tileWidth,
+        borderRadius: 14,
+        overflow: "hidden",
+        background: "rgba(255, 255, 255, 0.05)",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
+      }}
+    >
+      {entry.photoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- satori (next/og's ImageResponse) requires a plain <img>, not next/image.
+        <img
+          src={entry.photoUrl}
+          alt=""
+          width={tileWidth}
+          height={tileWidth}
+          style={{ width: tileWidth, height: tileWidth, objectFit: "cover", flexShrink: 0 }}
+        />
+      ) : (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            width: tileWidth,
+            height: tileWidth,
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+            background: "rgba(155, 123, 255, 0.12)",
+          }}
+        >
+          <div
+            style={{
+              display: "-webkit-box",
+              WebkitBoxOrient: "vertical",
+              WebkitLineClamp: 5,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              fontSize: 16,
+              lineHeight: 1.3,
+              color: FOREGROUND,
+              textAlign: "center",
+              maxHeight: 16 * 1.3 * 5,
+            }}
+          >
+            {entry.note}
+          </div>
+        </div>
+      )}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          justifyContent: "center",
+          height: FOOTNOTE_TILE_CAPTION_HEIGHT,
+          padding: "0 12px",
+        }}
+      >
+        <div style={{ display: "flex", fontSize: 12, fontStyle: "italic", color: MUTED_FOREGROUND }}>
+          {formatDate(entry.date)}
+        </div>
+        {entry.photoUrl && entry.note && (
+          <div
+            style={{
+              display: "-webkit-box",
+              WebkitBoxOrient: "vertical",
+              WebkitLineClamp: 2,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              marginTop: 2,
+              fontSize: 13,
+              lineHeight: 1.25,
+              color: MUTED_FOREGROUND,
+              maxHeight: 13 * 1.25 * 2,
+            }}
+          >
+            {entry.note}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
  * The "Notes" section below the board: one block per square that has at
  * least one completion with a note and/or a photo, in the same numbered
- * order as their corner badges. Each block lists every qualifying
- * completion, oldest first, with its own date/note/photo. Renders nothing
- * when `blocks` is empty, so cards with no notes/photos get no extra
- * markup at all.
+ * order as their corner badges. Each block lays out every qualifying
+ * completion, oldest first, as a grid of square tiles so photos show at
+ * full size rather than as tiny row thumbnails. Renders nothing when
+ * `blocks` is empty, so cards with no notes/photos get no extra markup at
+ * all.
  */
 function ExportFootnotes({ blocks, width }: { blocks: FootnoteBlock[]; width: number }) {
   if (blocks.length === 0) return null;
+
+  const tileWidth = computeFootnoteTileWidth(width - FOOTNOTE_GRID_INDENT);
 
   return (
     <div style={{ display: "flex", justifyContent: "center", marginTop: FOOTNOTE_SECTION_TOP_GAP, width: "100%" }}>
@@ -345,58 +445,9 @@ function ExportFootnotes({ blocks, width }: { blocks: FootnoteBlock[]; width: nu
                   {block.label}
                 </div>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: FOOTNOTE_ENTRY_ROW_GAP }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: FOOTNOTE_GRID_GAP, paddingLeft: FOOTNOTE_GRID_INDENT }}>
                 {block.entries.map((entry, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 14,
-                      paddingLeft: 38,
-                      height: entry.note ? FOOTNOTE_ENTRY_ROW_HEIGHT_WITH_NOTE : FOOTNOTE_ENTRY_ROW_HEIGHT_WITHOUT_NOTE,
-                    }}
-                  >
-                    <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0, justifyContent: "center" }}>
-                      <div style={{ display: "flex", fontSize: 14, fontStyle: "italic", color: MUTED_FOREGROUND }}>
-                        {formatDate(entry.date)}
-                      </div>
-                      {entry.note && (
-                        <div
-                          style={{
-                            display: "-webkit-box",
-                            WebkitBoxOrient: "vertical",
-                            WebkitLineClamp: 2,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            marginTop: 4,
-                            fontSize: 17,
-                            lineHeight: 1.3,
-                            color: MUTED_FOREGROUND,
-                            maxHeight: 17 * 1.3 * 2,
-                          }}
-                        >
-                          {entry.note}
-                        </div>
-                      )}
-                    </div>
-                    {entry.photoUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element -- satori (next/og's ImageResponse) requires a plain <img>, not next/image.
-                      <img
-                        src={entry.photoUrl}
-                        alt=""
-                        width={FOOTNOTE_THUMBNAIL_SIZE}
-                        height={FOOTNOTE_THUMBNAIL_SIZE}
-                        style={{
-                          width: FOOTNOTE_THUMBNAIL_SIZE,
-                          height: FOOTNOTE_THUMBNAIL_SIZE,
-                          borderRadius: 10,
-                          objectFit: "cover",
-                          flexShrink: 0,
-                        }}
-                      />
-                    )}
-                  </div>
+                  <ExportFootnoteTile key={index} entry={entry} tileWidth={tileWidth} />
                 ))}
               </div>
             </div>
@@ -448,9 +499,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const slotCount = card.gridSize * card.gridSize;
   const slots = Array.from({ length: slotCount }, (_, position) => squaresByPosition.get(position));
 
+  const contentWidth = CANVAS - PADDING * 2;
+
   // Every square with at least one completion that has a note and/or a
   // photo gets a numbered footnote block listing all of them — see
   // docs/superpowers/specs/2026-08-18-export-image-notes-photos-v2-design.md.
+  // Photos are fetched at 2x their rendered tile size for crisp downscaling.
+  const footnoteTileWidth = computeFootnoteTileWidth(contentWidth - FOOTNOTE_GRID_INDENT);
   const footnoteBlockCandidates = getFootnoteBlockCandidates(slots, completionsBySquareId);
   const resolvedFootnoteBlockCandidates = await Promise.all(
     footnoteBlockCandidates.map(async (candidate) => ({
@@ -461,7 +516,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
             return { completion, photoUrl: undefined };
           }
           try {
-            const photoUrl = await getCompletionPhotoDataUri(completion.photoPath, FOOTNOTE_THUMBNAIL_SIZE * 2);
+            const photoUrl = await getCompletionPhotoDataUri(completion.photoPath, Math.round(footnoteTileWidth * 2));
             return { completion, photoUrl };
           } catch (error) {
             console.error("export-image: failed to load completion photo", error);
@@ -473,9 +528,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   );
   const footnoteBlocks = buildFootnoteBlocks(resolvedFootnoteBlockCandidates);
   const footnoteNumbers = footnoteNumberBySquareId(footnoteBlocks);
-  const footnoteSectionHeight = computeFootnoteSectionHeight(footnoteBlocks);
+  const footnoteSectionHeight = computeFootnoteSectionHeight(footnoteBlocks, contentWidth);
 
-  const contentWidth = CANVAS - PADDING * 2;
   const contentHeight = CANVAS - PADDING * 2;
   const gap = card.gridSize >= 5 ? 10 : 14;
   // Cell size is the smaller of the width-constrained and height-constrained

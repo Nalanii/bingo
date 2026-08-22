@@ -13,13 +13,10 @@ import type { Completion } from "@/lib/firestore/completions";
  * docs/superpowers/specs/2026-08-18-export-image-notes-photos-v2-design.md.
  */
 
-/** Notes are capped at 280 chars (see MAX_NOTE_LENGTH in completion-notes.ts); footnote entries truncate further, to keep every row's height predictable regardless of how long the original note is. */
+/** Notes are capped at 280 chars (see MAX_NOTE_LENGTH in completion-notes.ts); footnote entries truncate further, to keep every tile's height predictable regardless of how long the original note is. */
 export const NOTE_TRUNCATE_LENGTH = 150;
 
-/** Square footprint of a footnote entry's photo thumbnail, in px. */
-export const FOOTNOTE_THUMBNAIL_SIZE = 72;
-
-// Fixed heights (px), summed in JS to size the footnote section — never
+// Fixed sizes (px), summed in JS to size the footnote section — never
 // derived from satori measuring rendered text, since satori's flex/
 // measurement quirks make that unreliable (see route.tsx's other layout
 // comments for prior art on this exact problem).
@@ -27,10 +24,19 @@ export const FOOTNOTE_SECTION_TOP_GAP = 20;
 export const FOOTNOTE_HEADING_HEIGHT = 36;
 /** Height of a block's badge+label header row, including the gap before its first entry. */
 export const FOOTNOTE_BLOCK_HEADER_HEIGHT = 38;
-export const FOOTNOTE_ENTRY_ROW_HEIGHT_WITH_NOTE = 84;
-export const FOOTNOTE_ENTRY_ROW_HEIGHT_WITHOUT_NOTE = 76;
-export const FOOTNOTE_ENTRY_ROW_GAP = 8;
+/** Left indent of a block's entry grid, aligning it under the header's label (badge diameter + gap). */
+export const FOOTNOTE_GRID_INDENT = 38;
+export const FOOTNOTE_GRID_GAP = 16;
+/** Number of tiles per row in a block's entry grid. */
+export const FOOTNOTE_GRID_COLUMNS = 4;
+/** Height of a tile's caption strip (date, and note when the tile also has a photo) below its square photo/text area. */
+export const FOOTNOTE_TILE_CAPTION_HEIGHT = 64;
 export const FOOTNOTE_BLOCK_GAP = 16;
+
+/** Width of one square tile in a block's entry grid, given the grid's available width (i.e. the footnote section's width minus `FOOTNOTE_GRID_INDENT`). */
+export function computeFootnoteTileWidth(gridWidth: number, columns = FOOTNOTE_GRID_COLUMNS): number {
+  return (gridWidth - FOOTNOTE_GRID_GAP * (columns - 1)) / columns;
+}
 
 /** A square with at least one completion that has a note and/or a photo, paired with just those qualifying completions (oldest first). */
 export interface FootnoteBlockCandidate {
@@ -132,18 +138,19 @@ export function footnoteNumberBySquareId(blocks: FootnoteBlock[]): Record<string
 /**
  * Total height (px) of the footnote section, including its top gap and
  * heading — 0 when there are no blocks, so the canvas stays exactly its
- * original 1080px for cards with nothing to report.
+ * original 1080px for cards with nothing to report. `width` is the
+ * footnote section's full width (matching the board's content width), used
+ * to derive each block's tile size and wrap its entries into rows exactly
+ * as `ExportFootnotes` will render them.
  */
-export function computeFootnoteSectionHeight(blocks: FootnoteBlock[]): number {
+export function computeFootnoteSectionHeight(blocks: FootnoteBlock[], width: number): number {
   if (blocks.length === 0) return 0;
+  const tileWidth = computeFootnoteTileWidth(width - FOOTNOTE_GRID_INDENT);
+  const tileHeight = tileWidth + FOOTNOTE_TILE_CAPTION_HEIGHT;
   const blocksHeight = blocks.reduce((total, block) => {
-    const entriesHeight = block.entries.reduce(
-      (sum, entry) =>
-        sum + (entry.note ? FOOTNOTE_ENTRY_ROW_HEIGHT_WITH_NOTE : FOOTNOTE_ENTRY_ROW_HEIGHT_WITHOUT_NOTE),
-      0,
-    );
-    const entryGaps = FOOTNOTE_ENTRY_ROW_GAP * (block.entries.length - 1);
-    return total + FOOTNOTE_BLOCK_HEADER_HEIGHT + entriesHeight + entryGaps;
+    const rows = Math.ceil(block.entries.length / FOOTNOTE_GRID_COLUMNS);
+    const gridHeight = rows * tileHeight + FOOTNOTE_GRID_GAP * (rows - 1);
+    return total + FOOTNOTE_BLOCK_HEADER_HEIGHT + gridHeight;
   }, 0);
   const blockGaps = FOOTNOTE_BLOCK_GAP * (blocks.length - 1);
   return FOOTNOTE_SECTION_TOP_GAP + FOOTNOTE_HEADING_HEIGHT + blocksHeight + blockGaps;

@@ -4,18 +4,23 @@ import type { Completion } from "@/lib/firestore/completions";
 import {
   FOOTNOTE_BLOCK_GAP,
   FOOTNOTE_BLOCK_HEADER_HEIGHT,
-  FOOTNOTE_ENTRY_ROW_GAP,
-  FOOTNOTE_ENTRY_ROW_HEIGHT_WITH_NOTE,
-  FOOTNOTE_ENTRY_ROW_HEIGHT_WITHOUT_NOTE,
+  FOOTNOTE_GRID_COLUMNS,
+  FOOTNOTE_GRID_GAP,
+  FOOTNOTE_GRID_INDENT,
   FOOTNOTE_HEADING_HEIGHT,
   FOOTNOTE_SECTION_TOP_GAP,
+  FOOTNOTE_TILE_CAPTION_HEIGHT,
   NOTE_TRUNCATE_LENGTH,
   buildFootnoteBlocks,
   computeFootnoteSectionHeight,
+  computeFootnoteTileWidth,
   footnoteNumberBySquareId,
   getFootnoteBlockCandidates,
   truncateNote,
 } from "./export-footnotes";
+
+/** Matches route.tsx's real footnote section width, for realistic height assertions. */
+const SECTION_WIDTH = 1016;
 
 function makeSquare(overrides: Partial<Square> = {}): Square {
   return {
@@ -184,12 +189,20 @@ describe("footnoteNumberBySquareId", () => {
   });
 });
 
+describe("computeFootnoteTileWidth", () => {
+  it("divides the available width evenly across columns, accounting for gaps", () => {
+    const width = FOOTNOTE_GRID_GAP * 3 + 100 * 4; // exactly 4 100px tiles + 3 gaps
+
+    expect(computeFootnoteTileWidth(width)).toBe(100);
+  });
+});
+
 describe("computeFootnoteSectionHeight", () => {
   it("is 0 for an empty block list", () => {
-    expect(computeFootnoteSectionHeight([])).toBe(0);
+    expect(computeFootnoteSectionHeight([], SECTION_WIDTH)).toBe(0);
   });
 
-  it("sums heading, header, gaps, and per-entry heights for a single block", () => {
+  it("sums heading, header, and one row of tiles for a block that fits in a single row", () => {
     const blocks = [
       {
         number: 1,
@@ -201,16 +214,32 @@ describe("computeFootnoteSectionHeight", () => {
         ],
       },
     ];
+    const tileWidth = computeFootnoteTileWidth(SECTION_WIDTH - FOOTNOTE_GRID_INDENT);
+    const tileHeight = tileWidth + FOOTNOTE_TILE_CAPTION_HEIGHT;
 
-    const height = computeFootnoteSectionHeight(blocks);
+    const height = computeFootnoteSectionHeight(blocks, SECTION_WIDTH);
+
+    expect(height).toBe(FOOTNOTE_SECTION_TOP_GAP + FOOTNOTE_HEADING_HEIGHT + FOOTNOTE_BLOCK_HEADER_HEIGHT + tileHeight);
+  });
+
+  it("wraps a block's entries into multiple rows once they exceed the column count", () => {
+    const entries = Array.from({ length: FOOTNOTE_GRID_COLUMNS + 1 }, (_, i) => ({
+      date: "2026-01-01T00:00:00.000Z",
+      note: `note ${i}`,
+      photoUrl: undefined,
+    }));
+    const blocks = [{ number: 1, squareId: "a", label: "A", entries }];
+    const tileWidth = computeFootnoteTileWidth(SECTION_WIDTH - FOOTNOTE_GRID_INDENT);
+    const tileHeight = tileWidth + FOOTNOTE_TILE_CAPTION_HEIGHT;
+
+    const height = computeFootnoteSectionHeight(blocks, SECTION_WIDTH);
 
     expect(height).toBe(
       FOOTNOTE_SECTION_TOP_GAP +
         FOOTNOTE_HEADING_HEIGHT +
         FOOTNOTE_BLOCK_HEADER_HEIGHT +
-        FOOTNOTE_ENTRY_ROW_HEIGHT_WITH_NOTE +
-        FOOTNOTE_ENTRY_ROW_HEIGHT_WITHOUT_NOTE +
-        FOOTNOTE_ENTRY_ROW_GAP * 1,
+        tileHeight * 2 +
+        FOOTNOTE_GRID_GAP,
     );
   });
 
@@ -229,15 +258,16 @@ describe("computeFootnoteSectionHeight", () => {
         entries: [{ date: "2026-01-01T00:00:00.000Z", note: undefined, photoUrl: "url" }],
       },
     ];
+    const tileWidth = computeFootnoteTileWidth(SECTION_WIDTH - FOOTNOTE_GRID_INDENT);
+    const tileHeight = tileWidth + FOOTNOTE_TILE_CAPTION_HEIGHT;
 
-    const height = computeFootnoteSectionHeight(blocks);
+    const height = computeFootnoteSectionHeight(blocks, SECTION_WIDTH);
 
     expect(height).toBe(
       FOOTNOTE_SECTION_TOP_GAP +
         FOOTNOTE_HEADING_HEIGHT +
-        (FOOTNOTE_BLOCK_HEADER_HEIGHT + FOOTNOTE_ENTRY_ROW_HEIGHT_WITH_NOTE) +
-        (FOOTNOTE_BLOCK_HEADER_HEIGHT + FOOTNOTE_ENTRY_ROW_HEIGHT_WITHOUT_NOTE) +
-        FOOTNOTE_BLOCK_GAP * 1,
+        (FOOTNOTE_BLOCK_HEADER_HEIGHT + tileHeight) * 2 +
+        FOOTNOTE_BLOCK_GAP,
     );
   });
 });
