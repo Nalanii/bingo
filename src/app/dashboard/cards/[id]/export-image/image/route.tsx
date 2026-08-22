@@ -305,6 +305,13 @@ function ExportFootnoteTile({ entry, tileWidth }: { entry: FootnoteHistoryEntry;
         display: "flex",
         flexDirection: "column",
         width: tileWidth,
+        // Explicit total height (not left to auto/content sizing) so this
+        // always matches computeFootnoteSectionHeight's assumption exactly —
+        // otherwise satori's flex/measurement quirks (see this file's other
+        // layout comments) can let a caption's text overflow its box and
+        // bleed into the next grid row, where it's painted over and
+        // effectively invisible.
+        height: tileWidth + FOOTNOTE_TILE_CAPTION_HEIGHT,
         borderRadius: 14,
         overflow: "hidden",
         background: "rgba(255, 255, 255, 0.05)",
@@ -312,14 +319,30 @@ function ExportFootnoteTile({ entry, tileWidth }: { entry: FootnoteHistoryEntry;
       }}
     >
       {entry.photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element -- satori (next/og's ImageResponse) requires a plain <img>, not next/image.
-        <img
-          src={entry.photoUrl}
-          alt=""
-          width={tileWidth}
-          height={tileWidth}
-          style={{ width: tileWidth, height: tileWidth, objectFit: "cover", flexShrink: 0 }}
-        />
+        // object-fit: contain (not cover) so the full photo is visible,
+        // letterboxed within the square rather than cropped — the data URI
+        // itself is already scaled to fit inside this box without cropping
+        // (see getCompletionPhotoDataUri), this just centers it.
+        <div
+          style={{
+            display: "flex",
+            width: tileWidth,
+            height: tileWidth,
+            flexShrink: 0,
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- satori (next/og's ImageResponse) requires a plain <img>, not next/image. */}
+          <img
+            src={entry.photoUrl}
+            alt=""
+            width={tileWidth}
+            height={tileWidth}
+            style={{ width: tileWidth, height: tileWidth, objectFit: "contain" }}
+          />
+        </div>
       ) : (
         <div
           style={{
@@ -327,6 +350,7 @@ function ExportFootnoteTile({ entry, tileWidth }: { entry: FootnoteHistoryEntry;
             flexDirection: "column",
             width: tileWidth,
             height: tileWidth,
+            flexShrink: 0,
             alignItems: "center",
             justifyContent: "center",
             padding: 16,
@@ -355,8 +379,9 @@ function ExportFootnoteTile({ entry, tileWidth }: { entry: FootnoteHistoryEntry;
         style={{
           display: "flex",
           flexDirection: "column",
-          flex: 1,
+          flexShrink: 0,
           justifyContent: "center",
+          width: tileWidth,
           height: FOOTNOTE_TILE_CAPTION_HEIGHT,
           padding: "0 12px",
         }}
