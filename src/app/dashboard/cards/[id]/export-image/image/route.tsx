@@ -491,8 +491,13 @@ function ExportFootnotes({ blocks, width }: { blocks: FootnoteBlock[]; width: nu
  * interactive chrome (no +/− controls, no tap affordances). See GitHub
  * issues #60 and #64.
  */
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  // Opt-out toggle (GitHub issue #66): ?notes=0 omits the "Notes" footnote
+  // section and its corner badges entirely, producing a board-only image at
+  // the original 1080x1080 canvas size. Defaults to included so existing
+  // sharing behavior (and links/bookmarks without this param) is unchanged.
+  const includeNotes = new URL(request.url).searchParams.get("notes") !== "0";
   const result = await getOwnedCard(id);
   if (!result.ok) {
     // getOwnedCard collapses "not signed in" and "card missing/not yours" into
@@ -531,7 +536,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   // docs/superpowers/specs/2026-08-18-export-image-notes-photos-v2-design.md.
   // Photos are fetched at 2x their rendered tile size for crisp downscaling.
   const footnoteTileWidth = computeFootnoteTileWidth(contentWidth - FOOTNOTE_GRID_INDENT);
-  const footnoteBlockCandidates = getFootnoteBlockCandidates(slots, completionsBySquareId);
+  // Skipped entirely when the caller opted out (see `includeNotes` above),
+  // which leaves the rest of this pipeline with an empty candidate list —
+  // the same shape as "no notes exist" — so no further branching is needed.
+  const footnoteBlockCandidates = includeNotes ? getFootnoteBlockCandidates(slots, completionsBySquareId) : [];
   const resolvedFootnoteBlockCandidates = await Promise.all(
     footnoteBlockCandidates.map(async (candidate) => ({
       square: candidate.square,

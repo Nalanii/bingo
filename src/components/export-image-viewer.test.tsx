@@ -22,4 +22,22 @@ describe("ExportImageViewer", () => {
     expect(screen.getByRole("img", { name: "Weekend Fun! bingo card" })).toHaveClass("opacity-100");
     expect(document.querySelector(".animate-spin")).not.toBeInTheDocument();
   });
+
+  it("defaults the 'Include notes & photos' toggle on and points the image at the plain src", () => {
+    render(<ExportImageViewer src="/some/export-image" alt="Weekend Fun! bingo card" />);
+
+    expect(screen.getByRole("switch", { name: "Include notes & photos" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("img", { name: "Weekend Fun! bingo card" })).toHaveAttribute("src", "/some/export-image");
+  });
+
+  it("switches the image to ?notes=0 and re-shows the spinner when the toggle is turned off", () => {
+    render(<ExportImageViewer src="/some/export-image" alt="Weekend Fun! bingo card" />);
+
+    fireEvent.load(screen.getByRole("img", { name: "Weekend Fun! bingo card" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Include notes & photos" }));
+
+    expect(screen.getByRole("switch", { name: "Include notes & photos" })).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("img", { name: "Weekend Fun! bingo card" })).toHaveAttribute("src", "/some/export-image?notes=0");
+    expect(screen.getByRole("img", { name: "Weekend Fun! bingo card" })).toHaveClass("opacity-0");
+  });
 });
