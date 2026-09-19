@@ -12,12 +12,10 @@ Fun, funky **goal & event bingo cards** you can build, track, and complete.
 
 🔥 Live Link: [bingo-psi-liart.vercel.app](https://bingo-psi-liart.vercel.app/)
 
-> **Status:** core loop is built and working — sign in, build a card, play it,
-> and get celebrated for a BINGO. Active development is now polish and new
-> features (animations, bigger grids, sharing) — see the
-> [GitHub Issues](../../issues) board.
-
-> _"Bingoal" is a working name and can change._
+> **Status:** feature-complete — sign in, build a card, play it, log
+> completions with photos, get an animated BINGO celebration, and export a
+> finished card as an image. See the [GitHub Issues](../../issues) board for
+> what's next.
 
 ## Why
 
@@ -34,14 +32,14 @@ challenge, a year of adventures, a chore chart — not just games.
 - 🔲 **3×3 or 5×5** grids, with an optional **free space**.
 - ✅ **Two square types** — _check_ (one and done) and _counter_ (reach a target).
 - 🎲 **Random or set order** — shuffle squares into a fixed layout, or keep your order.
-- 🕒 **Completion logging** — every completion is timestamped (and editable).
-- 🏆 **Real BINGO detection** — completed rows, columns, and diagonals are celebrated.
+- 🕒 **Completion logging** — every completion is timestamped, with an optional
+  note and photo, and editable later from a full history modal.
+- 🏆 **Animated BINGO celebration** — completed rows, columns, and diagonals
+  (plus a full blackout) trigger a confetti celebration.
+- 🖼️ **Export to image** — download a finished card as a PNG, with a toggle
+  to include or exclude the notes/photos section.
+- ✏️ **Full card management** — edit or delete a card at any time.
 - 📱 **Mobile & desktop friendly** — built responsive from the first pixel.
-
-## On the Roadmap
-
-Photos per completion · card time frames (e.g. "2026 only") · view-only sharing
-with friends via a code · lots of delightful animations.
 
 ## Requirements
 
